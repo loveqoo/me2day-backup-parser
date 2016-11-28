@@ -38,6 +38,7 @@ describe('Extract data from Resource file', function () {
     var $ = cheerio.load(resource, {normalizeWhitespace: true});
     var $container = $('div#container');
     var $metooContainer = $container.find('div.me2box.type_7');
+    var $commentContainer = $('div.comments_list_wrap');
     var $postBody = $container.find('p.post_body');
     describe('# Timestamp', function () {
         var $timestamp = $postBody.find('span.post_permalink');
@@ -59,8 +60,12 @@ describe('Extract data from Resource file', function () {
     describe('# Post content', function () {
         var rawHtml = $postBody.html();
         var postHtml = rawHtml.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, '');
-        assert.equal(toMarkdown(postHtml), '<a class="profile_popup no_link">tabby</a> 님 손이 이렇게 고운 지 몰랐어요.');
-        assert.equal(toMarkdown(me2day.util.extractContent(postHtml)), toMarkdown(postHtml));
+        it('By Manual Method', function () {
+          assert.equal(toMarkdown(postHtml), '<a class="profile_popup no_link">tabby</a> 님 손이 이렇게 고운 지 몰랐어요.');
+        });
+        it('By Me2day.util.extractContent', function () {
+          assert.equal(toMarkdown(me2day.util.extractContent(postHtml)), toMarkdown(postHtml));
+        });
     });
     describe('# Metoo information', function () {
         it('Metoo count', function () {
@@ -100,6 +105,17 @@ describe('Extract data from Resource file', function () {
                 metooPeople.push(me2day.util.extractPeopleIdByImageUri($(this).prop('src'), $(this)));
             });
             assert.equal(metooPeople.length, 23);
+        });
+    });
+    describe('# Comment Content', function () {
+        it('By Manual', function () {
+          $commentContainer.find('div.comment_item').each(function () {
+              var $comment = $(this), $image = $comment.find('a.comment_profile.profile_popup.no_link img'),
+                $commentTimestamp = $comment.find('span.comment_time'),
+                commentText = toMarkdown($comment.find('p.para').html());
+              console.log(me2day.util.extractPeopleIdByImageUri($image.attr('src')) + ','
+                + $image.attr('alt') + ',' + me2day.util.parseDate($commentTimestamp.text()) + ',' + commentText);
+          });
         });
     });
 });
