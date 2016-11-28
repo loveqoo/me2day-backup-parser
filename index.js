@@ -1,5 +1,6 @@
 var cheerio = require('cheerio');
 var toMarkDown = require('to-markdown');
+var fs = require('fs');
 
 var sequencer = (function () {
     var o = {};
@@ -21,7 +22,47 @@ var sequencer = (function () {
     };
 })();
 
+var repository = (function () {
+  var o = {},
+    get = function (type, id) {
+      return o[type][id];
+    },
+    set = function (type, obj) {
+      if (!o[type]) {
+        o[type] = {};
+      }
+      o[type][obj.id] = obj;
+    };
+  return {get:get, set: set};
+})();
+
 var Me2day = {
+    parse: {
+      getRootContainer: function (resourcePath) {
+        if (fs.existsSync(resourcePath)) {
+          throw new Error('invalid resource path : ' + resourcePath);
+        }
+        var resource = fs.readFileSync(resourcePath, 'utf-8');
+        var $ = cheerio.load(resource, {normalizeWhitespace: true});
+        return $('div#container');
+      },
+      getPost: function ($container) {
+        var $postBody = $container.find('p.post_body');
+        var $timestamp = $postBody.find('span.post_permalink');
+        var $authorContainer = $container.find('div.profile_box_inner');
+
+        var post = new Me2day.domain.Post();
+        post.text = toMarkdown(Me2day.util.extractContent($postBody.html()));
+        post.timestamp = Me2day.util.parseDate($timestamp.html());
+        //post.author =
+      },
+      getMetoo: function ($container) {
+        var $metooContainer = $container.find('div.me2box.type_7');
+      },
+      getCommentList: function ($container) {
+        var $commentContainer = $container.find('div.comments_list_wrap');
+      }
+    },
     util : {
         parseDate : function (dateString) {
             return new Date('20' + dateString.replace('.', '-').replace('.', '-').replace(' ', 'T') + ':00+09:00');
@@ -50,37 +91,40 @@ var Me2day = {
             return peopleId;
         }
     },
-    People: function (id) {
-        this.id = id || sequencer.get(this);
+    repository: repository,
+    domain: {
+      People: function (id) {
+        this.id = id;
         this.nickname;
         this.postList = [];
         this.commentList = [];
-    },
-    Post: function (id) {
+      },
+      Post: function (id) {
         this.id = id || sequencer.get(this);
         this.title;
         this.text;
         this.timestamp;
-        this.people;
+        this.author;
         this.metoo;
         this.tags = [];
         this.commentList = [];
-    },
-    Comment: function (id) {
+      },
+      Comment: function (id) {
         this.id = id || sequencer.get(this);
         this.text;
         this.timestamp;
         this.people;
         this.post;
-    },
-    Icon: function () {
+      },
+      Icon: function () {
         this.uri;
         this.text;
-    },
-    Metoo: function () {
+      },
+      Metoo: function () {
         this.post;
         this.count;
         this.peopleList = [];
+      }
     },
     getPostPackage: function (html) {
         var $ = cheerio.load(html, {normalizeWhitespace: true});

@@ -66,6 +66,12 @@ describe('Extract data from Resource file', function () {
         it('By Me2day.util.extractContent', function () {
           assert.equal(toMarkdown(me2day.util.extractContent(postHtml)), toMarkdown(postHtml));
         });
+        it('Extract Author', function () {
+          var $authorContainer = $container.find('div.profile_box_inner');
+          var $image = $authorContainer.find('img.profile_img');
+          console.log($image.html());
+          // TODO : test
+        });
     });
     describe('# Metoo information', function () {
         it('Metoo count', function () {
@@ -113,8 +119,8 @@ describe('Extract data from Resource file', function () {
               var $comment = $(this), $image = $comment.find('a.comment_profile.profile_popup.no_link img'),
                 $commentTimestamp = $comment.find('span.comment_time'),
                 commentText = toMarkdown($comment.find('p.para').html());
-              console.log(me2day.util.extractPeopleIdByImageUri($image.attr('src')) + ','
-                + $image.attr('alt') + ',' + me2day.util.parseDate($commentTimestamp.text()) + ',' + commentText);
+              //console.log(me2day.util.extractPeopleIdByImageUri($image.attr('src')) + ','
+               // + $image.attr('alt') + ',' + me2day.util.parseDate($commentTimestamp.text()) + ',' + commentText);
           });
         });
     });
