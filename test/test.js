@@ -16,7 +16,7 @@ describe('Resource file', function () {
         it('read resource file', function () {
             var resourcePath = path.join(__dirname, 'resource.html');
             var html = fs.readFileSync(resourcePath, 'utf-8');
-            assert.equal(html.length, 34800, 'Resource length is Not 34759, but ' + html.length);
+            assert.equal(html.length, 36490, 'Resource length is Not 34759, but ' + html.length);
         });
     });
     describe('# Parse Resource file', function () {
@@ -61,16 +61,15 @@ describe('Extract data from Resource file', function () {
         var rawHtml = $postBody.html();
         var postHtml = rawHtml.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, '');
         it('By Manual Method', function () {
-          assert.equal(toMarkdown(postHtml), '<a class="profile_popup no_link">tabby</a> 님 손이 이렇게 고운 지 몰랐어요.');
+            assert.equal(toMarkdown(postHtml), '<a class="profile_popup no_link">tabby</a> 님 손이 이렇게 고운 지 몰랐어요.');
         });
         it('By Me2day.util.extractContent', function () {
-          assert.equal(toMarkdown(me2day.util.extractContent(postHtml)), toMarkdown(postHtml));
+            assert.equal(toMarkdown(me2day.util.extractContent(postHtml)), toMarkdown(postHtml));
         });
         it('Extract Author', function () {
-          var $authorContainer = $container.find('div.profile_box_inner');
-          var $image = $authorContainer.find('img.profile_img');
-          console.log($image.html());
-          // TODO : test
+            //var $authorContainer = $container.find('div.profile_box_inner');
+            var $image = $container.find('img.profile_img');
+            assert.equal('garangnip', me2day.util.extractPeopleIdByImageUri($image.attr('src')));
         });
     });
     describe('# Metoo information', function () {
@@ -115,13 +114,55 @@ describe('Extract data from Resource file', function () {
     });
     describe('# Comment Content', function () {
         it('By Manual', function () {
-          $commentContainer.find('div.comment_item').each(function () {
-              var $comment = $(this), $image = $comment.find('a.comment_profile.profile_popup.no_link img'),
-                $commentTimestamp = $comment.find('span.comment_time'),
-                commentText = toMarkdown($comment.find('p.para').html());
-              //console.log(me2day.util.extractPeopleIdByImageUri($image.attr('src')) + ','
-               // + $image.attr('alt') + ',' + me2day.util.parseDate($commentTimestamp.text()) + ',' + commentText);
-          });
+            $commentContainer.find('div.comment_item').each(function () {
+                var $comment = $(this), $image = $comment.find('a.comment_profile.profile_popup.no_link img'),
+                    $commentTimestamp = $comment.find('span.comment_time'),
+                    commentText = toMarkdown($comment.find('p.para').html());
+                // console.log(me2day.util.extractPeopleIdByImageUri($image.attr('src')) + ','
+                //     + $image.attr('alt') + ',' + me2day.util.parseDate($commentTimestamp.text()) + ',' + commentText);
+            });
         });
     });
+    describe('# Tag list', function () {
+        it('By Manual', function () {
+            var $tagBody = $container.find('p.post_tag');
+            var tagText = $tagBody.text().replace(/[;|\/|\_|\-|\.]/g, '').split(' ');
+            var tags = [];
+            tagText.forEach(function (tag) {
+                tag.trim() ? tags.push(tag.trim()) : ''
+            });
+            assert.equal(13, tags.length);
+        });
+    });
+    describe('# Image list', function () {
+        it ('By Manual', function () {
+            var $imageContainer = $container.find('div.post_photo');
+            var imageList = [];
+            $imageContainer.find('a.per_img.photo').each(function () {
+                var $anchor = $(this), $image = $anchor.find('img');
+                imageList.push({thumbnail: $image.attr('src'), original: $anchor.attr('href')});
+            });
+            assert.equal(2, imageList.length);
+        });
+    });
+});
+describe('Parse', function () {
+    it ('# parse file', function () {
+        var context = me2day.createContext();
+        //context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
+        context.set('resourcePath', path.join(__dirname, 'resource.html'));
+        me2day.parse.file(context, function (post) {
+            console.log(post.toString());
+        });
+    });
+    // it('# parse directory', function () {
+    //     var directoryPath = '/Users/anthony/Documents/backup/me2day/garangnip/post';
+    //     me2day.parse.directory(directoryPath, function (post, context) {
+    //         if (post.hasTag('me2photo')) {
+    //             console.log(post.toString());
+    //             console.log(context.get('resourcePath'));
+    //             return false;
+    //         }
+    //     })
+    // });
 });
