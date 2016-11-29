@@ -267,19 +267,22 @@ var Me2day = {
                 return found;
             };
             this.toString = function () {
-                var result = [], extractNickname = function (peopleList) {
-                    return peopleList.map(function (people) {
-                        return people.nickname;
-                    });
-                }, extractTag = function (tagList) {
-                    return tagList.map(function (tag) {
-                        return tag.id;
-                    });
-                }, extractImage = function (imageList) {
-                    return imageList.map(function (image) {
-                        return image.original;
-                    });
-                };
+                var result = [],
+                    extractNickname = function (peopleList) {
+                        return peopleList.map(function (people) {
+                            return people.nickname;
+                        });
+                    },
+                    extractTag = function (tagList) {
+                        return tagList.map(function (tag) {
+                            return tag.id;
+                        });
+                    },
+                    extractImage = function (imageList) {
+                        return imageList.map(function (image) {
+                            return image.original;
+                        });
+                    };
                 result.push('id: ' + this.id);
                 result.push('title: ' + this.title);
                 result.push('post: ' + this.text);
