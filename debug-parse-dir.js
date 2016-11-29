@@ -26,4 +26,4 @@ bootstrap.execute(context, function (post) {
         + '(metoo: ' + post.metooPeopleIdList.length
         + ', comment:' +  post.commentIdList.length +')');
 });
-context.get('repository').save('Person');
+context.get('repository').save('People');
