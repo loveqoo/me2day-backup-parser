@@ -22,25 +22,97 @@ var sequencer = (function () {
     };
 })();
 
-var repository = (function () {
-    var o = {},
-        get = function (type, id) {
-            return o[type.name] ? o[type.name][id] : undefined;
-        },
-        set = function (type, obj) {
-            if (!o[type.name]) {
-                o[type.name] = {};
-            }
-            o[type.name][obj.id] = obj;
-        };
-    return {get: get, set: set};
+var createRepository = (function () {
+    return function (mode) {
+        mode = mode || 'memory';
+        var o = {},
+            get = function () {
+                return mode === 'memory' ? getMemory.apply(this, arguments) : getFile.apply(this, arguments);
+            },
+            set = function () {
+                mode === 'memory' ? setMemory.apply(this, arguments) : setFile.apply(this, arguments);
+            },
+            getMemory = function (type, idOrFunc) {
+                if (typeof idOrFunc === 'undefined') {
+                    return undefined;
+                } else if (typeof idOrFunc === 'function') {
+                    var data = o[type.name] || {}, result = [];
+                    for (var id in data) {
+                        if (!data.hasOwnProperty(id)) {
+                            return;
+                        }
+                        if (data[id] && idOrFunc(data[id])) {
+                            result.push(data[id]);
+                        }
+                    }
+                    return result;
+                } else {
+                    return o[type.name] ? o[type.name][idOrFunc] : undefined;
+                }
+            },
+            setMemory = function (type, obj) {
+                if (!o[type.name]) {
+                    o[type.name] = {};
+                }
+                o[type.name][obj.id] = obj;
+            },
+            getFile = function (type, idOrFunc) {
+                var filePath = path.join(__dirname, (type.name + '.json')),
+                    fileExist = fs.existsSync(filePath);
+                var data = fileExist ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
+                if (typeof idOrFunc === 'function') {
+                    var result = [];
+                    for (var id in data) {
+                        if (!data.hasOwnProperty(id)) {
+                            return;
+                        }
+                        var obj = Me2day.domain[type.name].fromJSON(data[id]);
+                        if (idOrFunc(obj)) {
+                            result.push(obj);
+                        }
+                    }
+                    return result;
+                } else {
+                    return Me2day.domain[type.name].fromJSON(data[idOrFunc]);
+                }
+            },
+            setFile = function (type, obj) {
+                var filePath = path.join(__dirname, (type.name + '.json')),
+                    fileExist = fs.existsSync(filePath);
+                var data = fileExist ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
+                data[obj.id] = obj;
+                fileExist && fs.unlinkSync(filePath);
+                fs.writeFileSync(filePath, JSON.stringify(data), 'utf-8');
+            },
+            toJSON = function (type) {
+                return type && type.name ? JSON.stringify(o[type.name]) : JSON.stringify(o);
+            },
+            load = function (jsonText, type) {
+                if (type && type.name) {
+                    o[type.name] = JSON.parse(jsonText);
+                } else {
+                    o = JSON.parse(jsonText);
+                }
+            };
+        if (mode === 'file') {
+            Me2day.initFile();
+        }
+        return {get: get, set: set, toJSON: toJSON, load: load};
+    };
 })();
 
 var createContext = function () {
     return (function () {
         var o = {},
-            get = function (key) {
-                return o[key];
+            get = function (key, defaultValue) {
+                var v = o[key];
+                if (typeof v !== 'undefined') {
+                    return v;
+                }
+                if (defaultValue) {
+                    return defaultValue;
+                }
+                return v;
             },
             set = function (key, value) {
                 o[key] = value;
@@ -50,11 +122,74 @@ var createContext = function () {
 };
 
 var Me2day = {
+    save: function (fileName) {
+        var filePath = path.join(__dirname, fileName || 'backup.json');
+        fs.existsSync(filePath) && fs.unlinkSync(filePath);
+        var data = Me2day.repository.toJSON();
+        fs.writeFileSync(filePath, data, 'utf-8');
+    },
+    load: function (fileName) {
+        var filePath = path.join(__dirname, fileName || 'backup.json');
+        var data = fs.readFileSync(filePath, 'utf-8');
+        Me2day.repository.load(data);
+    },
+    initFile: function () {
+        for (var type in Me2day.domain) {
+            var filePath = path.join(__dirname, (Me2day.domain[type].name + '.json'));
+            console.log('check file : ' + filePath);
+            fs.existsSync(filePath) && fs.unlinkSync(filePath);
+        }
+    },
+    connect: {
+        postAndPeople: function (post, people) {
+            post.authorId = people.id;
+            people.postIdList.push(post.id);
+        },
+        postAndTagList: function (post, tagList) {
+            post.tagIdList = tagList.map(function (tag) {
+                return tag.id
+            });
+            tagList.forEach(function (tag) {
+                tag.postIdList.push(post.id);
+            });
+        },
+        postAndMetooPeopleList: function (post, metooPeopleList) {
+            post.metooPeopleIdList = metooPeopleList.map(function (people) {
+                return people.id
+            });
+            metooPeopleList.forEach(function (metooPeople) {
+                metooPeople.metooPostIdList.push(metooPeople.id);
+            });
+        },
+        postAndCommentList: function (post, commentList) {
+            post.commentIdList = commentList.map(function (comment) {
+                return comment.id;
+            });
+            commentList.forEach(function (comment) {
+                comment.postId = post.id;
+            });
+        },
+        commentAndPeople: function (comment, people) {
+            comment.authorId = people.id;
+            people.commentIdList.push(comment.id);
+        }
+    },
     parse: {
         directory: function (context, callback) {
             var directoryPath = context.get('directoryPath');
             var files = fs.readdirSync(directoryPath, 'utf-8');
+            var fileCount = files.length;
+            var count = 1;
+            var showProgress = function () {
+                context.get('debug', false) && console.log('Progress: ' + count + '/' + fileCount);
+                count += 1;
+            };
+            if (context.get('mode') === 'file' && !context.get('init')) {
+                Me2day.repository = Me2day.createRepository('file');
+                context.set('init', true);
+            }
             files.forEach(function (fileName) {
+                showProgress();
                 if (path.extname(fileName) !== '.html') {
                     return;
                 }
@@ -63,10 +198,15 @@ var Me2day = {
             });
         },
         file: function (context, callback) {
+            if (context.get('mode') === 'file' && !context.get('init')) {
+                Me2day.repository = Me2day.createRepository('file');
+                context.set('init', true);
+            }
             var $ = Me2day.parse.getCheerio(context.get('resourcePath'));
             context.set('$', $);
             var post = Me2day.parse.getPost(context);
-            callback(post, context);
+            context.get('debug', false) && console.log('Post(' + post.id + ') is parsed.');
+            callback && (typeof callback === 'function') && callback(post, context);
         },
         getCheerio: function (resourcePath) {
             if (!fs.existsSync(resourcePath)) {
@@ -91,30 +231,20 @@ var Me2day = {
             post.title = title > 30 ? title.substring(0, 30) + '...' : title;
 
             var author = Me2day.parse.getAuthor(context);
-            post.author = author;
-            author.postList.push(post);
+            Me2day.connect.postAndPeople(post, author);
 
             var tagList = Me2day.parse.getTagList(context);
-            post.tagList = tagList;
-            tagList.forEach(function (tag) {
-                tag.postList.push(post);
-            });
+            Me2day.connect.postAndTagList(post, tagList);
 
             var metooPeopleList = Me2day.parse.getMetooPeopleList(context);
-            post.metooPeopleList = metooPeopleList;
-            metooPeopleList.forEach(function (people) {
-                people.metooPostList.push(post);
-            });
+            Me2day.connect.postAndMetooPeopleList(post, metooPeopleList);
 
             var commentList = Me2day.parse.getCommentList(context);
-            commentList.forEach(function (comment) {
-                comment.post = post;
-            });
-            post.commentList = commentList;
+            Me2day.connect.postAndCommentList(post, commentList);
 
             post.imageList = Me2day.parse.getImageList(context);
 
-            repository.set(Me2day.domain.Post, post);
+            Me2day.repository.set(Me2day.domain.Post, post);
             return post;
         },
         getAuthor: function (context) {
@@ -133,12 +263,15 @@ var Me2day = {
                 if (!tagText) {
                     return;
                 }
-                var tag = repository.get(Me2day.domain.Tag, tagText);
-                if (!tag) {
-                    tag = new Me2day.domain.Tag(tagText);
-                    repository.set(Me2day.domain.Tag, tag);
+                var tagList = Me2day.repository.get(Me2day.domain.Tag, function (tag) {
+                    return tag.text === tagText;
+                });
+                if (tagList.length > 0) {
+                    return tagList[0];
                 }
-                tags.push(tag);
+                var tag = new Me2day.domain.Tag(null, tagText);
+                Me2day.repository.set(Me2day.domain.Tag, tag);
+                return tag;
             });
             return tags;
         },
@@ -171,8 +304,8 @@ var Me2day = {
                 var comment = new Me2day.domain.Comment();
                 comment.timestamp = Me2day.util.parseDate($commentTimestamp.text());
                 comment.text = commentText;
-                comment.people = people;
-                people.commentList.push(comment);
+                Me2day.repository.set(Me2day.domain.Comment, comment);
+                Me2day.connect.commentAndPeople(comment, people);
                 commentList.push(comment);
             });
             return commentList;
@@ -198,14 +331,14 @@ var Me2day = {
     },
     util: {
         getPeople: function (peopleId, imageSrc, nickname, resourcePath) {
-            var people = repository.get(Me2day.domain.People, peopleId);
+            var people = Me2day.repository.get(Me2day.domain.People, peopleId);
             if (people) {
                 return people;
             }
             people = new Me2day.domain.People(peopleId);
             people.nickname = nickname;
             people.profilePath = path.join(resourcePath, '..', imageSrc);
-            repository.set(Me2day.domain.People, people);
+            Me2day.repository.set(Me2day.domain.People, people);
             return people;
         },
         parseDate: function (dateString) {
@@ -235,30 +368,64 @@ var Me2day = {
             return peopleId;
         }
     },
-    repository: repository,
+    repository: createRepository(),
+    createRepository: createRepository,
     createContext: createContext,
     domain: {
         People: function (id) {
             this.id = id;
-            this.nickname;
-            this.profilePath;
-            this.postList = [];
-            this.commentList = [];
-            this.metooPostList = [];
+            this.nickname = undefined;
+            this.profilePath = undefined;
+            this.postIdList = [];
+            this.getPostList = function () {
+                return this.postIdList.map(function (postId) {
+                    return Me2day.repository.get(Me2day.domain.Post, postId);
+                });
+            };
+            this.commentIdList = [];
+            this.getCommentList = function () {
+                return this.commentIdList.map(function (commentId) {
+                    return Me2day.repository.get(Me2day.domain.Comment, commentId);
+                });
+            };
+            this.metooPostIdList = [];
+            this.getMetooPostList = function () {
+                return this.metooPostIdList.map(function (postId) {
+                    return Me2day.repository.get(Me2day.domain.Post, postId);
+                });
+            };
         },
         Post: function (id) {
             this.id = id || sequencer.get(this);
-            this.title;
-            this.text;
-            this.timestamp;
-            this.author;
+            this.title = undefined;
+            this.text = undefined;
+            this.timestamp = undefined;
+            this.authorId = undefined;
+            this.getAuthor = function () {
+                return Me2day.repository.get(Me2day.domain.People, this.authorId);
+            };
             this.imageList = [];
-            this.metooPeopleList = [];
-            this.tagList = [];
-            this.commentList = [];
+            this.metooPeopleIdList = [];
+            this.getMetooPeopleList = function () {
+                return this.metooPeopleIdList.map(function (peopleId) {
+                    return Me2day.repository.get(Me2day.domain.People, peopleId);
+                });
+            };
+            this.tagIdList = [];
+            this.getTagList = function () {
+                return this.tagIdList.map(function (tagId) {
+                    return Me2day.repository.get(Me2day.domain.Tag, tagId);
+                });
+            };
+            this.commentIdList = [];
+            this.getCommentList = function () {
+                return this.commentIdList.map(function (commentId) {
+                    return Me2day.repository.get(Me2day.domain.Comment, commentId);
+                });
+            };
             this.hasTag = function (tag) {
                 var found = false;
-                this.tagList.every(function (tagObj) {
+                this.getTagList().every(function (tagObj) {
                     if (tagObj.id === tag) {
                         found = true;
                         return false;
@@ -287,29 +454,92 @@ var Me2day = {
                 result.push('title: ' + this.title);
                 result.push('post: ' + this.text);
                 result.push('timestamp: ' + this.timestamp);
-                result.push('author: ' + this.author.nickname + '(' + this.author.profilePath + ')');
-                result.push('metoo(' + this.metooPeopleList.length + '):' + extractNickname(this.metooPeopleList).join(','));
-                result.push('tags: ' + extractTag(this.tagList).join(','));
+                result.push('author: ' + this.getAuthor().nickname + '(' + this.getAuthor().profilePath + ')');
+                result.push('metoo(' + this.getMetooPeopleList().length + '):' + extractNickname(this.getMetooPeopleList()).join(','));
+                result.push('tags: ' + extractTag(this.getTagList()).join(','));
                 result.push('images: ' + extractImage(this.imageList).join(','));
                 result.push('comment: ');
-                this.commentList.forEach(function (comment) {
-                    result.push(comment.people.nickname + ':' + comment.text + '<' + comment.timestamp + '>');
+                this.getCommentList().forEach(function (comment) {
+                    result.push(comment.getAuthor().nickname + ':' + comment.text + '<' + comment.timestamp + '>');
                 });
                 return result.join('\r\n');
             }
         },
         Comment: function (id) {
             this.id = id || sequencer.get(this);
-            this.text;
-            this.timestamp;
-            this.people;
-            this.post;
+            this.text = undefined;
+            this.timestamp = undefined;
+            this.authorId = undefined;
+            this.getAuthor = function () {
+                return Me2day.repository.get(Me2day.domain.People, this.authorId);
+            };
+            this.postId = undefined;
+            this.getPost = function () {
+                return Me2day.repository.get(Me2day.domain.Post, this.postId);
+            }
         },
-        Tag: function (id) {
-            this.id = id;
-            this.postList = [];
+        Tag: function (id, text) {
+            this.id = id || sequencer.get(this);
+            this.text = text;
+            this.postIdList = [];
+            this.getPostList = function () {
+                return this.postIdList.map(function (postId) {
+                    return Me2day.repository.get(Me2day.domain.Post, postId);
+                });
+            };
         }
     }
+};
+
+Me2day.domain.People.fromJSON = function (data) {
+    if (!data) {
+        return;
+    }
+    var people = new Me2day.domain.People(data.id);
+    people.nickname = data.nickname;
+    people.profilePath = data.profilePath;
+    people.postIdList = data.postIdList || [];
+    people.commentIdList = data.commentIdList || [];
+    people.metooPostIdList = data.metooPostIdList || [];
+    return people;
+};
+
+Me2day.domain.Post.fromJSON = function (data) {
+    if (!data) {
+        return;
+    }
+    var post = new Me2day.domain.Post(data.id);
+    post.title = data.title;
+    post.text = data.text;
+    post.timestamp = new Date(data.timestamp);
+    post.authorId = data.authorId;
+    post.imageList = data.imageList || [];
+    post.metooPeopleIdList = data.metooPeopleIdList || [];
+    post.tagIdList = data.tagIdList || [];
+    post.commentIdList = data.commentIdList || [];
+    return post;
+};
+
+Me2day.domain.Comment.fromJSON = function (data) {
+    if (!data) {
+        return;
+    }
+    var comment = new Me2day.domain.Comment(data.id);
+    comment.text = data.text;
+    comment.timestamp = new Date(data.timestamp);
+    comment.authorId = data.authorId;
+    comment.postId = data.postId;
+    return comment;
+};
+
+Me2day.domain.Tag.fromJSON = function (data) {
+    if (!data) {
+        return;
+    }
+    var tag = new Me2day.domain.Tag(data.id);
+    tag.text = data.text;
+    tag.postIdList = data.postIdList || [];
+    return tag;
 };
 
 exports.Me2day = Me2day;

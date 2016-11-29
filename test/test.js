@@ -135,7 +135,7 @@ describe('Extract data from Resource file', function () {
         });
     });
     describe('# Image list', function () {
-        it ('By Manual', function () {
+        it('By Manual', function () {
             var $imageContainer = $container.find('div.post_photo');
             var imageList = [];
             $imageContainer.find('a.per_img.photo').each(function () {
@@ -146,14 +146,42 @@ describe('Extract data from Resource file', function () {
         });
     });
 });
+describe('Repository load', function () {
+    var context = me2day.createContext();
+    context.set('debug', false);
+    context.set('resourcePath', path.join(__dirname, 'resource.html'));
+
+    it('toJSON - load by memory', function () {
+        var post = undefined;
+        me2day.parse.file(context, function (_post) {
+            post = _post;
+        });
+        var repositoryData = JSON.parse(me2day.repository.toJSON());
+        assert(post.metooPeopleIdList.length, repositoryData['Post'][post.id]['metooPeopleIdList'].length);
+    });
+    it('toJSON - load by file', function () {
+        var post = undefined;
+        me2day.parse.file(context, function (_post) {
+            post = _post;
+        });
+        var repositoryJson = me2day.repository.toJSON();
+        var filePath = path.join(__dirname, 'sample.json');
+        fs.existsSync(filePath) && fs.unlinkSync(filePath);
+        fs.writeFileSync(filePath, repositoryJson, 'utf-8');
+        var repositoryJsonReaden = fs.readFileSync(filePath, 'utf-8');
+        var repositoryData = JSON.parse(repositoryJsonReaden);
+        fs.unlinkSync(filePath);
+        assert(post.metooPeopleIdList.length, repositoryData['Post'][post.id]['metooPeopleIdList'].length);
+    });
+});
 describe('Parse', function () {
-    it ('# parse file', function () {
+    it('# parse file', function () {
         var context = me2day.createContext();
+        context.set('mode', 'file');
+        context.set('debug', false);
         //context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
         context.set('resourcePath', path.join(__dirname, 'resource.html'));
-        me2day.parse.file(context, function (post) {
-            console.log(post.toString());
-        });
+        me2day.parse.file(context);
     });
     // it('# parse directory', function () {
     // var context = me2day.createContext();
