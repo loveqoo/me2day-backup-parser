@@ -156,8 +156,9 @@ describe('Parse', function () {
         });
     });
     // it('# parse directory', function () {
-    //     var directoryPath = '/Users/anthony/Documents/backup/me2day/garangnip/post';
-    //     me2day.parse.directory(directoryPath, function (post, context) {
+    // var context = me2day.createContext();
+    // context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
+    //     me2day.parse.directory(context, function (post, context) {
     //         if (post.hasTag('me2photo')) {
     //             console.log(post.toString());
     //             console.log(context.get('resourcePath'));

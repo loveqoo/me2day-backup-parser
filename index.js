@@ -51,9 +51,8 @@ var createContext = function () {
 
 var Me2day = {
     parse: {
-        directory: function (directoryPath, callback) {
-            var context = createContext();
-            context.set('directoryPath', directoryPath);
+        directory: function (context, callback) {
+            var directoryPath = context.get('directoryPath');
             var files = fs.readdirSync(directoryPath, 'utf-8');
             files.forEach(function (fileName) {
                 if (path.extname(fileName) !== '.html') {
