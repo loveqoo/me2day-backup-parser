@@ -7,8 +7,8 @@ setting['Comment']['repositoryType'] = 'file';
 setting['Tag']['repositoryType'] = 'file';
 
 var context = bootstrap.getContext(setting);
-//context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
-context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
+context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
+//context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
 context.set('debug', true);
 
 bootstrap.execute(context, function (post) {
@@ -22,8 +22,8 @@ bootstrap.execute(context, function (post) {
             global.gc();
         }
     }
-    console.log(new Date() + ': ' + post.title
-        + '(metoo: ' + post.metooPeopleIdList.length
-        + ', comment:' +  post.commentIdList.length +')');
+    // console.log(new Date() + ': ' + post.title
+    //     + '(metoo: ' + post.metooPeopleIdList.length
+    //     + ', comment:' +  post.commentIdList.length +')');
 });
 context.get('repository').save('People');

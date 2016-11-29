@@ -21,6 +21,7 @@
   "homepage": "https://github.com/loveqoo/me2day-backup-parser#readme",
   "dependencies": {
     "cheerio": "^0.22.0",
+    "heapdump": "^0.3.7",
     "to-markdown": "^3.0.3"
   },
   "devDependencies": {

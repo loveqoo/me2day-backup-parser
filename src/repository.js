@@ -75,7 +75,9 @@ var fileRepository = function (_path) {
             },
             set = function (type, obj) {
                 !(type && obj && obj.id) && error();
-                setData(type, obj);
+                var data = getData(type);
+                data[obj.id] = obj;
+                setData(type, data);
             };
         return {get: get, set: set, list: list};
     })();
