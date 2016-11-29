@@ -1,12 +1,17 @@
-var me2day = require('./index').Me2day;
+var bootstrap = require('./index');
 
-me2day.repository = me2day.createRepository('file');
-var context = me2day.createContext();
-context.set('mode', 'file');
+var setting = bootstrap.init();
+setting['People']['repositoryType'] = 'memory';
+setting['Post']['repositoryType'] = 'file';
+setting['Comment']['repositoryType'] = 'file';
+setting['Tag']['repositoryType'] = 'file';
+
+var context = bootstrap.getContext(setting);
+//context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
+context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
 context.set('debug', true);
-context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
 
-me2day.parse.directory(context, function (post) {
+bootstrap.execute(context, function (post) {
     if (global.gc) {
         var heapTotal = process.memoryUsage().heapTotal;
         var heapUsed = process.memoryUsage().heapUsed;
@@ -21,4 +26,4 @@ me2day.parse.directory(context, function (post) {
         + '(metoo: ' + post.metooPeopleIdList.length
         + ', comment:' +  post.commentIdList.length +')');
 });
-me2day.save();
+context.get('repository').save('Person');
