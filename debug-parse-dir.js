@@ -11,7 +11,13 @@ var context = bootstrap.getContext(setting);
 context.set('directoryPath', '/Users/anthony/Documents/backup/me2day/garangnip/post');
 //context.set('resourcePath', '/Users/anthony/Documents/backup/me2day/garangnip/post/p.pPOOM.iOI.html');
 context.set('debug', true);
-
+context.set('max-parse-count', 10);
+context.set('before-file-remove', false);
+context.set('save-sequence', true);
+context.set('onExit', function () {
+    console.log('save people');
+    context.get('repository').save('People');
+});
 bootstrap.execute(context, function (post) {
     if (global.gc) {
         var heapTotal = process.memoryUsage().heapTotal;
@@ -20,6 +26,7 @@ bootstrap.execute(context, function (post) {
 
         //console.log('Memory: ' + heapUsedPercent + '% used');
         if (heapUsedPercent > 90) {
+            global.gc();
             // heapdump.writeSnapshot(function(err, filename) {
             //     console.log('dump written to', filename);
             //     process.exit();
@@ -30,4 +37,3 @@ bootstrap.execute(context, function (post) {
     //     + '(metoo: ' + post.metooPeopleIdList.length
     //     + ', comment:' +  post.commentIdList.length +')');
 });
-context.get('repository').save('People');

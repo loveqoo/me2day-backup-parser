@@ -188,6 +188,8 @@ describe('Parse', function () {
         context.set('debug', true);
 
         bootstrap.execute(context);
+        bootstrap.execute(context);
+        bootstrap.execute(context);
         context.get('repository').save('People');
     });
     // it('# parse directory', function () {

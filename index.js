@@ -29,6 +29,8 @@ var bootstrap = (function () {
         context.set('resourcePath', '');
         context.set('config', {flag: flag, path: pathInfo});
         context.set('before-file-remove', true);
+        context.set('max-parse-count', -1);
+        context.set('save-sequence', false);
         return context;
     };
     return {

@@ -5,7 +5,10 @@ var path = require('path');
 var repository = require('./repository');
 
 var sequencer = (function () {
-    var o = {};
+    var o = {}, filePath = path.join(__dirname, 'sequencer.json');
+    if (fs.existsSync(filePath)) {
+        o = JSON.parse(fs.readFileSync(filePath, 'utf-8')) || {};
+    }
     return {
         get: function (obj) {
             var type = obj.constructor.name;
@@ -19,6 +22,11 @@ var sequencer = (function () {
                 o[type] += 1;
                 return o[type];
             }
+        },
+        save: function () {
+            console.log('save ' + filePath);
+            fs.existsSync(filePath) && fs.unlinkSync(filePath);
+            fs.writeFileSync(filePath, JSON.stringify(o), 'utf-8');
         }
     };
 })();
@@ -113,25 +121,56 @@ var Me2day = {
             var directoryPath = context.get('directoryPath');
             var files = fs.readdirSync(directoryPath, 'utf-8');
             var fileCount = files.length;
-            var count = 1;
+
+            var completedPostList = Me2day.repository.list(Me2day.domain.Post, function () {
+                return true;
+            });
+            var count = completedPostList.length + 1;
 
             var showProgress = function () {
                 context.get('debug', false) && console.log('Progress: ' + count + '/' + fileCount);
                 count += 1;
             };
 
+            var parseCount = 0;
             files.forEach(function (fileName) {
-                showProgress();
                 if (path.extname(fileName) !== '.html') {
+                    context.get('debug', false) && console.log('[WARN] ' + fileName + ' is ignored.');
+                    return;
+                }
+                showProgress();
+                if (context.get('max-parse-count', -1) === parseCount) {
+                    context.get('debug', false) && console.log('[INFO] Parse Exit for max-parse-count.');
+                    context.get('save-sequence', false) && sequencer.save();
+                    context.get('onExit')
+                    && (typeof context.get('onExit') === 'function')
+                    && context.get('onExit')();
+                    process.exit();
                     return;
                 }
                 context.set('resourcePath', path.join(directoryPath, fileName));
-                return Me2day.parse.file(context, callback);
+                if (Me2day.parse.file(context, callback)) {
+                    parseCount += 1;
+                }
             });
+
+            context.get('save-sequence', false) && sequencer.save();
+            context.get('onExit')
+            && (typeof context.get('onExit') === 'function')
+            && context.get('onExit')();
         },
         file: function (context, callback) {
             !(context && context.get('resourcePath')) && error();
             Me2day.setUp(context);
+
+            var postResourcePath = path.basename(context.get('resourcePath'));
+            var samePosts = Me2day.repository.list(Me2day.domain.Post, function (post) {
+                return post.sourcePath === postResourcePath;
+            });
+            if (samePosts && samePosts.length > 0) {
+                context.get('debug', false) && console.log('[WARN] Post(' + samePosts[0].id + ') is already parsed, ignored.');
+                return false;
+            }
 
             var $ = Me2day.parse.getCheerio(context.get('resourcePath'));
             context.set('$', $);
@@ -140,8 +179,15 @@ var Me2day = {
             context.set('$container', $container);
 
             var post = Me2day.parse.getPost(context);
-            context.get('debug', false) && console.log('Post(' + post.id + ') is parsed.');
+            context.get('debug', false) && console.log('[INFO] Post(' + post.id + ') is parsed.');
             callback && (typeof callback === 'function') && callback(post, context);
+            context.get('save-sequence', false) && sequencer.save();
+
+            $container = null;
+            $ = null;
+            post = null;
+            global.gc ? global.gc() : false;
+            return true;
         },
         getCheerio: function (resourcePath) {
             !(resourcePath) && error();
@@ -161,6 +207,7 @@ var Me2day = {
             var $timestamp = $postBody.find('span.post_permalink');
 
             var post = new Me2day.domain.Post();
+            post.sourcePath = path.basename(context.get('resourcePath'));
             post.text = toMarkdown(Me2day.util.extractContent($postBody.html()));
             post.timestamp = Me2day.util.parseDate($timestamp.html());
 
@@ -357,6 +404,7 @@ var Me2day = {
         },
         Post: function (id) {
             this.id = id || sequencer.get(this);
+            this.sourcePath = undefined;
             this.title = undefined;
             this.text = undefined;
             this.timestamp = undefined;
