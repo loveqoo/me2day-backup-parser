@@ -4,75 +4,58 @@ var fs = require('fs');
 var path = require('path');
 var repository = require('./repository');
 
-var sequencer = (function () {
-    var o = {}, filePath = path.join(__dirname, 'sequencer.json');
-    if (fs.existsSync(filePath)) {
-        o = JSON.parse(fs.readFileSync(filePath, 'utf-8')) || {};
-    }
-    return {
-        get: function (obj) {
-            var type = obj.constructor.name;
-            if (!type) {
-                throw new Error('type is invalid.');
-            }
-            if (typeof o[type] === 'undefined') {
-                o[type] = 1;
-                return 1;
-            } else {
-                o[type] += 1;
-                return o[type];
-            }
-        },
-        save: function () {
-            console.log('save ' + filePath);
-            fs.existsSync(filePath) && fs.unlinkSync(filePath);
-            fs.writeFileSync(filePath, JSON.stringify(o), 'utf-8');
-        }
-    };
-})();
-
-var createContext = function () {
-    return (function () {
-        var o = {},
-            get = function (key, defaultValue) {
-                var v = o[key];
-                if (typeof v !== 'undefined') {
-                    return v;
-                }
-                if (defaultValue) {
-                    return defaultValue;
-                }
-                return v;
-            },
-            set = function (key, value) {
-                o[key] = value;
-            };
-        return {get: get, set: set};
-    })();
-};
-
 var error = function (msg) {
     throw new Error(msg || 'invalid parameter');
 };
 
 var Me2day = {
-    createContext: createContext,
-    repository: undefined,
-    setUp: function (context) {
-        !(context && context.get('config')) && error();
-        if (!context.get('repository')) {
-            context.set('repository', repository(context.get('config')));
-            Me2day.repository = context.get('repository');
+    sequencer: (function () {
+        var o = {}, filePath = path.join(__dirname, 'sequencer.json');
+        if (fs.existsSync(filePath)) {
+            o = JSON.parse(fs.readFileSync(filePath, 'utf-8')) || {};
         }
-        if (context.get('before-file-remove')) {
-            var path = context.get('config').path;
-            for (var domain in path) {
-                path.hasOwnProperty(domain) && path[domain]
-                && fs.existsSync(path[domain]) && fs.unlinkSync(path[domain]);
+        return {
+            get: function (obj) {
+                var type = obj.constructor.name;
+                if (!type) {
+                    throw new Error('type is invalid.');
+                }
+                if (typeof o[type] === 'undefined') {
+                    o[type] = 1;
+                    return 1;
+                } else {
+                    o[type] += 1;
+                    return o[type];
+                }
+            },
+            save: function () {
+                console.log('save ' + filePath);
+                fs.existsSync(filePath) && fs.unlinkSync(filePath);
+                fs.writeFileSync(filePath, JSON.stringify(o), 'utf-8');
             }
-            context.set('before-file-remove', false);
-        }
+        };
+    })(),
+    createContext: function () {
+        return (function () {
+            var o = {},
+                get = function (key, defaultValue) {
+                    var v = o[key];
+                    if (typeof v !== 'undefined') {
+                        return v;
+                    }
+                    if (defaultValue) {
+                        return defaultValue;
+                    }
+                    return v;
+                },
+                set = function (key, value) {
+                    o[key] = value;
+                    return value;
+                };
+            return {get: get, set: set};
+        })();
     },
+    repository: undefined,
     graph: {
         postAndPeople: function (post, people) {
             post.authorId = people.id;
@@ -115,53 +98,28 @@ var Me2day = {
     },
     parse: {
         directory: function (context, callback) {
-            !(context && context.get('config') && context.get('directoryPath')) && error();
-            Me2day.setUp(context);
-
-            var directoryPath = context.get('directoryPath');
-            var files = fs.readdirSync(directoryPath, 'utf-8');
-            var fileCount = files.length;
-
-            var completedPostList = Me2day.repository.list(Me2day.domain.Post, function () {
-                return true;
+            !(context && context.get('config') && context.get('resourcePath')) && error();
+            var directoryPath = context.get('resourcePath');
+            new Promise(function (fulfill, reject) {
+                fs.readdir(directoryPath, 'utf-8', function (err, files) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        fulfill(files);
+                    }
+                });
+            }).then(function (files) {
+                files.forEach(function (fileName) {
+                    if (path.extname(fileName) !== '.html') {
+                        return;
+                    }
+                    context.set('resourcePath', path.join(directoryPath, fileName));
+                    Me2day.parse.file(context, callback);
+                });
             });
-            var count = completedPostList.length + 1;
-
-            var showProgress = function () {
-                context.get('debug', false) && console.log('Progress: ' + count + '/' + fileCount);
-                count += 1;
-            };
-
-            var parseCount = 0;
-            files.forEach(function (fileName) {
-                if (path.extname(fileName) !== '.html') {
-                    context.get('debug', false) && console.log('[WARN] ' + fileName + ' is ignored.');
-                    return;
-                }
-                showProgress();
-                if (context.get('max-parse-count', -1) === parseCount) {
-                    context.get('debug', false) && console.log('[INFO] Parse Exit for max-parse-count.');
-                    context.get('save-sequence', false) && sequencer.save();
-                    context.get('onExit')
-                    && (typeof context.get('onExit') === 'function')
-                    && context.get('onExit')();
-                    process.exit();
-                    return;
-                }
-                context.set('resourcePath', path.join(directoryPath, fileName));
-                if (Me2day.parse.file(context, callback)) {
-                    parseCount += 1;
-                }
-            });
-
-            context.get('save-sequence', false) && sequencer.save();
-            context.get('onExit')
-            && (typeof context.get('onExit') === 'function')
-            && context.get('onExit')();
         },
         file: function (context, callback) {
             !(context && context.get('resourcePath')) && error();
-            Me2day.setUp(context);
 
             var postResourcePath = path.basename(context.get('resourcePath'));
             var samePosts = Me2day.repository.list(Me2day.domain.Post, function (post) {
@@ -169,33 +127,38 @@ var Me2day = {
             });
             if (samePosts && samePosts.length > 0) {
                 context.get('debug', false) && console.log('[WARN] Post(' + samePosts[0].id + ') is already parsed, ignored.');
-                return false;
+                return;
             }
-
-            var $ = Me2day.parse.getCheerio(context.get('resourcePath'));
-            context.set('$', $);
-
-            var $container = $('div#container');
-            context.set('$container', $container);
-
-            var post = Me2day.parse.getPost(context);
-            context.get('debug', false) && console.log('[INFO] Post(' + post.id + ') is parsed.');
-            callback && (typeof callback === 'function') && callback(post, context);
-            context.get('save-sequence', false) && sequencer.save();
-
-            $container = null;
-            $ = null;
-            post = null;
-            global.gc ? global.gc() : false;
-            return true;
+            Me2day.parse.getCheerio(context.get('resourcePath')).then(function ($) {
+                context.set('$', $);
+                context.set('$container', $('div#container'));
+                var post = Me2day.parse.getPost(context);
+                callback && (typeof callback === 'function') && callback(post, context);
+            });
         },
         getCheerio: function (resourcePath) {
             !(resourcePath) && error();
-            if (!fs.existsSync(resourcePath)) {
-                throw new Error('invalid resource path : ' + resourcePath);
-            }
-            var resource = fs.readFileSync(resourcePath, 'utf-8');
-            return cheerio.load(resource, {normalizeWhitespace: true});
+            return new Promise(function (fulfill, reject) {
+                fs.access(resourcePath, fs.constants.R_OK, function (err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        fulfill();
+                    }
+                });
+            }).then(function () {
+                return new Promise(function (fulfill, reject) {
+                    fs.readFile(resourcePath, 'utf-8', function (err, data) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            fulfill(data);
+                        }
+                    });
+                });
+            }).then(function (data) {
+                return new Promise.resolve(cheerio.load(data, {normalizeWhitespace: true}));
+            });
         },
         getPost: function (context) {
             !(context && context.get('$') && context.get('repository') && context.get('$container')) && error();
