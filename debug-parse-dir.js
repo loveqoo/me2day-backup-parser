@@ -1,6 +1,7 @@
 var bootstrap = require('./index');
 
 var setting = bootstrap.init();
+var heapdump = require('heapdump');
 setting['People']['repositoryType'] = 'memory';
 setting['Post']['repositoryType'] = 'file';
 setting['Comment']['repositoryType'] = 'file';
@@ -19,7 +20,10 @@ bootstrap.execute(context, function (post) {
 
         //console.log('Memory: ' + heapUsedPercent + '% used');
         if (heapUsedPercent > 90) {
-            global.gc();
+            // heapdump.writeSnapshot(function(err, filename) {
+            //     console.log('dump written to', filename);
+            //     process.exit();
+            // });
         }
     }
     // console.log(new Date() + ': ' + post.title

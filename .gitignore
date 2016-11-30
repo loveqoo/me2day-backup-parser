@@ -40,3 +40,5 @@ Comment.json
 Post.json
 Tag.json
 People.json
+*.heapsnapshot
+*.bak

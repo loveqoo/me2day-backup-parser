@@ -28,6 +28,7 @@ var bootstrap = (function () {
         context.set('directoryPath', '');
         context.set('resourcePath', '');
         context.set('config', {flag: flag, path: pathInfo});
+        context.set('before-file-remove', true);
         return context;
     };
     return {

@@ -56,10 +56,13 @@ var Me2day = {
             context.set('repository', repository(context.get('config')));
             Me2day.repository = context.get('repository');
         }
-        var path = context.get('config').path;
-        for (var domain in path) {
-            path.hasOwnProperty(domain) && path[domain]
-            && fs.existsSync(path[domain]) && fs.unlinkSync(path[domain]);
+        if (context.get('before-file-remove')) {
+            var path = context.get('config').path;
+            for (var domain in path) {
+                path.hasOwnProperty(domain) && path[domain]
+                && fs.existsSync(path[domain]) && fs.unlinkSync(path[domain]);
+            }
+            context.set('before-file-remove', false);
         }
     },
     graph: {
@@ -69,9 +72,9 @@ var Me2day = {
             Me2day.repository.set(Me2day.domain.People, people);
         },
         postAndTagList: function (post, tagList) {
-            post.tagIdList = Me2day.util.map(tagList, function (tag) {
+            post.tagIdList = Me2day.util.addUniq(post.tagIdList, Me2day.util.map(tagList, function (tag) {
                 return tag.id;
-            });
+            }));
             tagList.forEach(function (tag) {
                 tag.postIdList.push(post.id);
                 Me2day.repository.set(Me2day.domain.Tag, tag);
@@ -82,7 +85,7 @@ var Me2day = {
                 return people.id;
             });
             metooPeopleList.forEach(function (metooPeople) {
-                metooPeople.metooPostIdList.push(metooPeople.id);
+                metooPeople.metooPostIdList.push(post.id);
                 Me2day.repository.set(Me2day.domain.People, metooPeople);
             });
         },
@@ -205,6 +208,7 @@ var Me2day = {
                 });
                 if (tagList.length > 0) {
                     tags.push(tagList[0]);
+                    return;
                 }
                 var tag = new Me2day.domain.Tag(null, tagText);
                 Me2day.repository.set(Me2day.domain.Tag, tag);
@@ -273,7 +277,14 @@ var Me2day = {
         }
     },
     util: {
+        addUniq: function (target, values) {
+            !(Array.isArray(target) && Array.isArray(values)) && error();
+            return target.concat(values).filter(function (value, index, self) {
+                return self.indexOf(value) === index;
+            });
+        },
         map : function (list, callback) {
+            !(Array.isArray(list) && typeof callback === 'function') && error();
             var result = [];
             list.forEach(function (item) {
                 var data = callback(item);
