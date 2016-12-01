@@ -22,6 +22,7 @@
   "dependencies": {
     "cheerio": "^0.22.0",
     "co": "^4.6.0",
+    "rwlock": "^5.0.0",
     "to-markdown": "^3.0.3"
   },
   "devDependencies": {
