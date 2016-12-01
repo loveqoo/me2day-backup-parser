@@ -42,3 +42,4 @@ Tag.json
 People.json
 *.heapsnapshot
 *.bak
+src/*.json
