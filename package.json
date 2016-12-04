@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha ./test/test.js"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,9 @@
   "dependencies": {
     "cheerio": "^0.22.0",
     "co": "^4.6.0",
+    "graceful-fs": "^4.1.11",
     "lodash": "^4.17.2",
+    "progress": "^1.1.8",
     "rwlock": "^5.0.0",
     "to-markdown": "^3.0.3"
   },
