@@ -9,7 +9,7 @@ const ProgressBar = require('progress');
 class Parser {
     constructor(resourcePath) {
         this.resourcePath = resourcePath;
-        this.debugMode = false;
+        this.debugMode = true;
         this.defaultEncoding = 'utf8';
         this.progressBar = undefined;
     }
@@ -23,12 +23,15 @@ class Parser {
             let stats = yield this.isDirectory();
             if (stats.isDirectory()) {
                 let files = yield this.getFiles();
-                this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
-                    complete: '=',
-                    incomplete: ' ',
-                    width: 20,
-                    total: files.length
-                });
+                if (!this.debugMode) {
+                    this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
+                        complete: '=',
+                        incomplete: ' ',
+                        width: 20,
+                        total: files.length
+                    });
+                }
+
                 let promiseList = [];
                 for (let file of files) {
                     promiseList.push(this.parse(path.join(this.resourcePath, file)));
@@ -99,7 +102,7 @@ class Parser {
         return co.call(this, function *() {
             let data = yield this.getData(filePath);
             let $ = cheerio.load(data, {normalizeWhitespace: true});
-            if (this.progressBar) {
+            if (!this.debugMode) {
                 this.progressBar.tick({
                     'file': path.basename(filePath),
                     'timestamp': $('span.post_permalink').text()
