@@ -38,7 +38,7 @@ class Parser {
                 }
                 yield promiseList;
             } else {
-                return yield this.parse(this.resourcePath);
+                yield this.parse(this.resourcePath);
             }
         }).then(()=> {
             callback();
