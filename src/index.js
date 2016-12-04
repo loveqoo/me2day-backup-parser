@@ -23,14 +23,7 @@ class Parser {
             let stats = yield this.isDirectory();
             if (stats.isDirectory()) {
                 let files = yield this.getFiles();
-                if (!this.debugMode) {
-                    this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
-                        complete: '=',
-                        incomplete: ' ',
-                        width: 20,
-                        total: files.length
-                    });
-                }
+                this.enableProgressBar();
 
                 let promiseList = [];
                 for (let file of files) {
@@ -125,6 +118,17 @@ class Parser {
                 }
             });
         });
+    }
+
+    enableProgressBar() {
+        if (!this.debugMode) {
+            this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
+                complete: '=',
+                incomplete: ' ',
+                width: 20,
+                total: files.length
+            });
+        }
     }
 }
 
