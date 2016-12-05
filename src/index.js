@@ -101,7 +101,7 @@ class Parser {
             if (this.progressBar) {
                 this.progressBar.tick({
                     'file': baseName,
-                    'timestamp': post.getTimestamp()
+                    'timestamp': post.timestamp
                 });
             } else {
                 this.log(`[INFO] File: ${filePath}`);
