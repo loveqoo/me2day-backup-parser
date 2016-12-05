@@ -1,6 +1,7 @@
 const toMarkdown = require('to-markdown');
 const repository = require('./v1/repository');
-const sequencer = require('./v1/sequencer');
+const Sequencer = require('./v1/sequencer');
+const sequencer = new Sequencer();
 const memoryRepository = repository.memory();
 const fileRepository = repository.file();
 
