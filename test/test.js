@@ -9,7 +9,8 @@ const assert = require('assert'),
 describe('Parse', function () {
     this.timeout(30000);
     it('# parse file', function (done) {
-        let parser = new Parser(path.join('/Users/anthony/Documents/backup/me2day/garangnip/post'));
+        //let parser = new Parser(path.join('/Users/anthony/Documents/backup/me2day/garangnip/post'));
+        let parser = new Parser(path.join(__dirname, 'resource.html'));
         parser.run(()=>{
             done();
         });

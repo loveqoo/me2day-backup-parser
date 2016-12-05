@@ -5,6 +5,7 @@ const co = require('co');
 const cheerio = require('cheerio');
 const _ = require('lodash');
 const ProgressBar = require('progress');
+const Post = require('./post');
 
 class Parser {
     constructor(resourcePath) {
@@ -95,11 +96,16 @@ class Parser {
         return co.call(this, function *() {
             let data = yield this.getData(filePath);
             let $ = cheerio.load(data, {normalizeWhitespace: true});
+            let baseName = path.basename(filePath);
+            let post = Post.getPost($, baseName, filePath);
             if (this.progressBar) {
                 this.progressBar.tick({
-                    'file': path.basename(filePath),
-                    'timestamp': $('span.post_permalink').text()
+                    'file': baseName,
+                    'timestamp': post.getTimestamp()
                 });
+            } else {
+                this.log(`[INFO] File: ${filePath}`);
+                this.log(`[INFO] ${post.id} ${post.content} at ${post.timestamp}`);
             }
         }).catch((e)=> {
             this.log(e);
