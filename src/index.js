@@ -10,7 +10,7 @@ class Parser {
     constructor(resourcePath) {
         this.resourcePath = resourcePath;
         this.debugMode = true;
-        this.defaultEncoding = 'utf8';
+        this.defaultEncoding = 'utf-8';
         this.progressBar = undefined;
     }
 
@@ -18,9 +18,9 @@ class Parser {
         co.call(this, function *() {
             let exists = yield this.isExist();
             if (!exists) {
-                throw new Error(this.resourcePath + ' is NOT exists.');
+                throw new Error(`${this.resourcePath} is NOT exists.`);
             }
-            let stats = yield this.isDirectory();
+            let stats = yield this.getStats();
             if (stats.isDirectory()) {
                 let files = yield this.getFiles();
                 this.enableProgressBar();
@@ -30,8 +30,10 @@ class Parser {
                     promiseList.push(this.parse(path.join(this.resourcePath, file)));
                 }
                 yield promiseList;
-            } else {
+            } else if (stats.isFile()) {
                 yield this.parse(this.resourcePath);
+            } else {
+              throw new Error(`${this.resourcePath} is NOT directory or file.`);
             }
         }).then(()=> {
             callback();
@@ -41,10 +43,7 @@ class Parser {
     }
 
     log(msg) {
-        if (!msg || !this.debugMode) {
-            return;
-        }
-        console.log(msg);
+      msg && this.debugMode && console.log(msg);
     }
 
     isExist() {
@@ -61,12 +60,12 @@ class Parser {
         });
     }
 
-    isDirectory() {
+    getStats() {
         return new Promise((fulfill, reject) => {
             fs.lstat(this.resourcePath, (e, stats) => {
                 if (e) {
-                    reject(err);
-                    this.debugMode && console.log(e);
+                    reject(e);
+                    this.log(e);
                 } else {
                     fulfill(stats);
                     this.log(`[INFO] ${this.resourcePath} is ${stats.isDirectory() ? 'directory.' : 'file'}.`);
@@ -80,6 +79,7 @@ class Parser {
             fs.readdir(this.resourcePath, this.defaultEncoding, (e, files) => {
                 if (e) {
                     reject(e);
+                    this.log(e);
                 } else {
                     files = files.filter((file)=> {
                         return path.extname(file) === '.html';
@@ -121,14 +121,15 @@ class Parser {
     }
 
     enableProgressBar() {
-        if (!this.debugMode) {
-            this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
-                complete: '=',
-                incomplete: ' ',
-                width: 20,
-                total: files.length
-            });
+        if (this.debugMode) {
+          return;
         }
+        this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
+          complete: '=',
+          incomplete: ' ',
+          width: 20,
+          total: files.length
+        });
     }
 }
 
