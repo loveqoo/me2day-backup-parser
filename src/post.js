@@ -1,4 +1,8 @@
 const toMarkdown = require('to-markdown');
+const repository = require('./v1/repository');
+const sequencer = require('./v1/sequencer');
+const memoryRepository = repository.memory();
+const fileRepository = repository.file();
 
 const util = {
   toTimestamp(timestampText) {

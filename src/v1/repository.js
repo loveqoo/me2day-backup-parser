@@ -24,8 +24,8 @@ const repository = {
             },
             list = (key, filter) => {
                 !(key && filter && typeof filter === 'function') && throwError();
-                var data = o[key];
-                var result = [];
+                let data = o[key];
+                let result = [];
                 for (let id in data) {
                     data.hasOwnProperty(id) && filter(data[id]) && result.push(data[id]);
                 }
@@ -37,7 +37,7 @@ const repository = {
                 o[key][obj.id] = obj;
             },
             save = (key, callback) => {
-                var filePath = filePathDefinition[key];
+                let filePath = filePathDefinition[key];
                 co(function *() {
                     try {
                         yield promises.existFile(filePath);
@@ -57,7 +57,7 @@ const repository = {
                 });
             },
             load = (key, callback) => {
-                var filePath = filePathDefinition[key];
+                let filePath = filePathDefinition[key];
                 co(function *() {
                     try {
                         yield promises.existFile(filePath);
