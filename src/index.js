@@ -95,7 +95,7 @@ class Parser {
         return co.call(this, function *() {
             let data = yield this.getData(filePath);
             let $ = cheerio.load(data, {normalizeWhitespace: true});
-            if (!this.debugMode) {
+            if (this.progressBar) {
                 this.progressBar.tick({
                     'file': path.basename(filePath),
                     'timestamp': $('span.post_permalink').text()
