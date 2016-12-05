@@ -12,6 +12,9 @@ const util = {
 class Person {
   constructor(id) {
     this.id = id;
+    this.postIdList;
+    this.commentIdList;
+    this.metooPostIdList;
   }
 }
 
@@ -19,13 +22,14 @@ class Tag {
   constructor(id) {
     this.id;
     this.content;
+    this.postIdList;
   }
 }
 
 class Comment {
   constructor(id) {
     this.id = id;
-    this.writer;
+    this.writerId;
     this.timestamp;
     this.content;
   }
@@ -34,12 +38,12 @@ class Comment {
 class Post {
   constructor(id) {
     this.id = id;
-    this.writer;
-    this.metooPeoples;
+    this.writerId;
+    this.metooPeopleIdList;
     this.timestamp;
     this.content;
-    this.tags;
-    this.comments;
+    this.tagIdList;
+    this.commentIdList;
   }
 
   static getPost($, id, resourcePath) {
