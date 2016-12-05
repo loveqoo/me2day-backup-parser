@@ -13,14 +13,25 @@ const repository = {
      * 메모리 객체 저장소.
      * o[구분자][아이디] = 객체
      *
-     * @param filePathDefinition
-     * @returns {{get: get, set: set, list: list, save: save, load: load}}
      */
     memory(filePathDefinition = {}) {
         let o = {}, debugMode = false,
             get = (key, id) => {
                 !(key && id) && throwError();
                 return o[key] ? o[key][id] : undefined;
+            },
+            getOne = (key, filter) =>{
+                !(key && filter && typeof filter === 'function') && throwError();
+                let data = o[key];
+                if (!data) {
+                    return;
+                }
+                let result = [];
+                for (let id in data) {
+                    data.hasOwnProperty(id) && filter(data[id]) && result.push(data[id]);
+                }
+                result.length !== 1 && throwError(`${result.length} found.`);
+                return result[0];
             },
             list = (key, filter) => {
                 !(key && filter && typeof filter === 'function') && throwError();
@@ -37,7 +48,7 @@ const repository = {
                 o[key][obj.id] = obj;
             },
             save = (key, callback) => {
-                let filePath = filePathDefinition[key];
+                let filePath = filePathDefinition[key] || path.join(__dirname, '.repo', key + '.json');
                 co(function *() {
                     try {
                         yield promises.existFile(filePath);
@@ -57,7 +68,7 @@ const repository = {
                 });
             },
             load = (key, callback) => {
-                let filePath = filePathDefinition[key];
+                let filePath = filePathDefinition[key] || path.join(__dirname, '.repo', key + '.json');
                 co(function *() {
                     try {
                         yield promises.existFile(filePath);
@@ -81,7 +92,7 @@ const repository = {
                 debugMode = !debugMode;
             };
         return {
-            get: get, set: set, list: list, save: save, load: load, debug: debug
+            get: get, getOne:getOne, set: set, list: list, save: save, load: load, debug: debug
         };
     },
     file() {

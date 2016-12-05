@@ -10,7 +10,7 @@ const Post = require('./post');
 class Parser {
     constructor(resourcePath) {
         this.resourcePath = resourcePath;
-        this.debugMode = true;
+        this.debugMode = false;
         this.defaultEncoding = 'utf-8';
         this.progressBar = undefined;
     }
@@ -24,7 +24,7 @@ class Parser {
             let stats = yield this.getStats();
             if (stats.isDirectory()) {
                 let files = yield this.getFiles();
-                this.enableProgressBar();
+                this.enableProgressBar(files.length);
 
                 let promiseList = [];
                 for (let file of files) {
@@ -101,7 +101,7 @@ class Parser {
             if (this.progressBar) {
                 this.progressBar.tick({
                     'file': baseName,
-                    'timestamp': post.timestamp
+                    'content': post.content.substring(0, 30)
                 });
             } else {
                 this.log(`[INFO] File: ${filePath}`);
@@ -126,15 +126,15 @@ class Parser {
         });
     }
 
-    enableProgressBar() {
+    enableProgressBar(fileLength) {
         if (this.debugMode) {
           return;
         }
-        this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :timestamp', {
+        this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :content', {
           complete: '=',
           incomplete: ' ',
-          width: 20,
-          total: files.length
+          width: 30,
+          total: fileLength
         });
     }
 }
