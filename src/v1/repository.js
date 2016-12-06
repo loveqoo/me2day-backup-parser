@@ -1,26 +1,162 @@
 'use strict';
-
-const fs = require('fs');
-const path = require('path');
 const co = require('co');
-const promises = require('./promises');
-const throwError = (msg) => {
-    throw new Error(msg || 'invalid parameter');
-};
+const fs = require('graceful-fs');
+const path = require('path');
+const AsyncFsRunnable = require('../AsyncFsRunnable');
+
+class Repository extends AsyncFsRunnable {
+    constructor() {
+        super();
+    }
+
+    load(keys) {
+        return this.run(function *() {
+            this.data = {};
+            for (let key of keys) {
+                let directoryPath = path.join(__dirname, '.repo', key);
+                let exists = yield this.isExist(directoryPath);
+                let stats = yield this.getStats(directoryPath);
+                this.data[key] = {};
+                if (exists && stats.isDirectory()) {
+                    let files = yield this.getFileList(path.join(directoryPath, key), (file)=> {
+                        return path.extname(file) === '.json';
+                    });
+                    for (let file of files) {
+                        let filePath = path.join(directoryPath, file);
+                        let prevData = JSON.parse(yield this.readFile(filePath));
+                        this.data[key] = prevData;
+                    }
+                } else {
+                    this.data[key] = {};
+                }
+            }
+        });
+    }
+
+    loadPartial(keys) {
+        return this.run(function *() {
+            this.data = {};
+            for (let key of keys) {
+                let rootDirectoryPath = path.join(__dirname, '.repo', key);
+                let rootExists = yield this.isExist(rootDirectoryPath);
+                let rootStats = yield this.getStats(rootDirectoryPath);
+                this.data[key] = {};
+                if (rootExists && rootStats.isDirectory()) {
+                    let partialDirectories = yield this.getFileList(rootDirectoryPath); // .repo/${key}/partial-n
+                    for (let partialDirectory of partialDirectories) {
+                        let partialExists = yield this.isExist(partialDirectory);
+                        let partialStats = yield this.getStats(partialDirectory);
+
+                        if (!partialExists || !partialStats.isDirectory()) {
+                            continue;
+                        }
+                        let files = yield this.getFileList(path.join(rootDirectoryPath, partialDirectory), (file)=> {
+                            return path.extname(file) === '.json';
+                        });
+                        for (let file of files) {
+                            let filePath = path.join(rootDirectoryPath, subDirectory, file);
+                            let prevData = JSON.parse(yield this.readFile(filePath));
+                            let id = path.parse(file).name;
+                            this.data[key][id] = prevData;
+                        }
+                    }
+                } else {
+                    this.data[key] = {};
+                }
+            }
+        });
+    }
+
+    save() {
+        !(this.data) && this.throwError(`The load() must be executed first.`);
+        return this.run(function *() {
+            let directoryPath = path.join(__dirname, '.repo');
+            let exists = yield this.isExist(directoryPath);
+            if (!exists) {
+                yield this.createDirectory(directoryPath);
+            }
+            for (let key of this.data) {
+                let filePath = path.join(directoryPath, `${key}.json`);
+                yield this.writeFile(filePath, JSON.stringify(this.data[key]));
+            }
+        });
+    }
+
+    savePartial() {
+        !(this.data) && this.throwError(`The loadPartial() must be executed first.`);
+        return this.run(function *() {
+            let directoryCache = {};
+            for (let key of this.data) {
+                for (let id of this.data[key]) {
+                    let directoryPath = path.join(__dirname, '.repo', key, `partial-${Math.floor(id / 1000)}`);
+                    if (!directoryCache[directoryPath]) {
+                        let exists = yield this.isExist(directoryPath);
+                        if (!exists) {
+                            yield this.createDirectory(directoryPath);
+                        }
+                        directoryCache[directoryPath] = true;
+                    }
+                    let filePath = path.join(directoryPath, `${id}.json`);
+                    yield this.writeFile(filePath, JSON.stringify(this.data[key][id]));
+                }
+            }
+        });
+    }
+
+    get(key, id) {
+        !(key && id) && this.throwError();
+        return new Promise((fulfill, reject)=> {
+            let result = this.data[key];
+            if (typeof result === 'undefined') {
+                reject();
+            } else {
+                fulfill(result);
+            }
+        });
+    }
+
+    list(key, filter) {
+        !(key && filter && typeof filter === 'function') && this.throwError();
+        return new Promise((fulfill)=> {
+            let keyData = this.data[key];
+            let result = [];
+            for (let id of keyData) {
+                filter(keyData[id]) && result.push(keyData[id]);
+            }
+            fulfill(result);
+        });
+    }
+
+    findOne(key, filter) {
+        !(key && filter && typeof filter === 'function') && this.throwError();
+        return this.run(function *() {
+            let list = yield this.list(key, filter);
+            if (!list) {
+                return;
+            }
+            list.length > 1 && this.log(`${key} has more than one data.`);
+            return list[0];
+        });
+    }
+
+    set(key, obj) {
+        !(key && obj && obj.id) && this.throwError();
+        return new Promise((fulfill)=> {
+            this.data[key][obj.id] = obj;
+            fulfill();
+        });
+    }
+}
 
 const repository = {
-    /**
-     * 메모리 객체 저장소.
-     * o[구분자][아이디] = 객체
-     *
-     */
+
     memory(filePathDefinition = {}) {
         let o = {}, debugMode = false,
             get = (key, id) => {
                 !(key && id) && throwError();
                 return o[key] ? o[key][id] : undefined;
             },
-            getOne = (key, filter) =>{
+            getOne = (key, filter) => {
                 !(key && filter && typeof filter === 'function') && throwError();
                 let data = o[key];
                 if (!data) {
@@ -92,15 +228,15 @@ const repository = {
                 debugMode = !debugMode;
             };
         return {
-            get: get, getOne:getOne, set: set, list: list, save: save, load: load, debug: debug
+            get: get, getOne: getOne, set: set, list: list, save: save, load: load, debug: debug
         };
     },
     file() {
         let debugMode = false,
-            getFolderName = (key) =>{
+            getFolderName = (key) => {
                 return Math.floor(1000 / key).toString();
             },
-            getDirectoryRootPath = (key) =>{
+            getDirectoryRootPath = (key) => {
                 return path.join(__dirname, '.repo', key);
             },
             getDirectoryPath = (key)=> {
