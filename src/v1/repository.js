@@ -5,15 +5,17 @@ const path = require('path');
 const AsyncFsRunnable = require('../AsyncFsRunnable');
 
 class Repository extends AsyncFsRunnable {
+
     constructor() {
         super();
+        this.defaultFolderName = '.repo';
     }
 
     load(keys) {
         return this.run(function *() {
             this.data = {};
             for (let key of keys) {
-                let directoryPath = path.join(__dirname, '.repo', key);
+                let directoryPath = path.join(__dirname, this.defaultFolderName, key);
                 let exists = yield this.isExist(directoryPath);
                 let stats = yield this.getStats(directoryPath);
                 this.data[key] = {};
@@ -23,8 +25,7 @@ class Repository extends AsyncFsRunnable {
                     });
                     for (let file of files) {
                         let filePath = path.join(directoryPath, file);
-                        let prevData = JSON.parse(yield this.readFile(filePath));
-                        this.data[key] = prevData;
+                      this.data[key] = JSON.parse(yield this.readFile(filePath));
                     }
                 } else {
                     this.data[key] = {};
@@ -37,7 +38,7 @@ class Repository extends AsyncFsRunnable {
         return this.run(function *() {
             this.data = {};
             for (let key of keys) {
-                let rootDirectoryPath = path.join(__dirname, '.repo', key);
+                let rootDirectoryPath = path.join(__dirname, this.defaultFolderName, key);
                 let rootExists = yield this.isExist(rootDirectoryPath);
                 let rootStats = yield this.getStats(rootDirectoryPath);
                 this.data[key] = {};
@@ -70,7 +71,7 @@ class Repository extends AsyncFsRunnable {
     save() {
         !(this.data) && this.throwError(`The load() must be executed first.`);
         return this.run(function *() {
-            let directoryPath = path.join(__dirname, '.repo');
+            let directoryPath = path.join(__dirname, this.defaultFolderName);
             let exists = yield this.isExist(directoryPath);
             if (!exists) {
                 yield this.createDirectory(directoryPath);
@@ -88,7 +89,7 @@ class Repository extends AsyncFsRunnable {
             let directoryCache = {};
             for (let key of this.data) {
                 for (let id of this.data[key]) {
-                    let directoryPath = path.join(__dirname, '.repo', key, `partial-${Math.floor(id / 1000)}`);
+                    let directoryPath = path.join(__dirname, this.defaultFolderName, key, `partial-${Math.floor(id / 1000)}`);
                     if (!directoryCache[directoryPath]) {
                         let exists = yield this.isExist(directoryPath);
                         if (!exists) {
@@ -103,32 +104,28 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    get(key, id) {
+    get(key, id, f = (o) => JSON.parse(o)) {
         !(key && id) && this.throwError();
-        return new Promise((fulfill, reject)=> {
+        return new Promise((fulfill)=> {
             let result = this.data[key];
-            if (typeof result === 'undefined') {
-                reject();
-            } else {
-                fulfill(result);
-            }
+            fulfill(result ? f(result) : undefined);
         });
     }
 
-    list(key, filter) {
-        !(key && filter && typeof filter === 'function') && this.throwError();
+    list(key, filter, f = (o) => JSON.parse(o)) {
+        !(key && this.isFunction(filter)) && this.throwError();
         return new Promise((fulfill)=> {
             let keyData = this.data[key];
             let result = [];
             for (let id of keyData) {
-                filter(keyData[id]) && result.push(keyData[id]);
+                filter(keyData[id]) && result.push(f(keyData[id]));
             }
             fulfill(result);
         });
     }
 
     findOne(key, filter) {
-        !(key && filter && typeof filter === 'function') && this.throwError();
+        !(key && this.isFunction(filter)) && this.throwError();
         return this.run(function *() {
             let list = yield this.list(key, filter);
             if (!list) {
@@ -139,10 +136,10 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    set(key, obj) {
-        !(key && obj && obj.id) && this.throwError();
+    set(key, id, obj, f = (o) => JSON.stringify(o)) {
+        !(key && id && obj) && this.throwError();
         return new Promise((fulfill)=> {
-            this.data[key][obj.id] = obj;
+            this.data[key][id] = f(obj);
             fulfill();
         });
     }

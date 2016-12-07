@@ -18,6 +18,10 @@ class AsyncFsRunnable {
         msg && this.debugMode && console.log(msg);
     }
 
+    isFunction (f) {
+        return f && (typeof f === 'function');
+    }
+
     throwError(msg = 'Invalid Parameter') {
         throw new Error(msg);
     }
@@ -29,10 +33,9 @@ class AsyncFsRunnable {
             .catch((e)=> {
                 this.log(e);
             });
-        if (callback && (typeof callback === 'function')) {
+        if (this.isFunction(callback)) {
             f.then(() => {
-                return callback && (typeof callback === 'function')
-                    && callback(arguments);
+                return callback(arguments);
             });
         }
         return f;
