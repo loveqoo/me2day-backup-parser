@@ -3,7 +3,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 const ProgressBar = require('progress');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
-const Post = require('./post');
+const getPost = require('./post');
 
 class Parser extends AsyncFsRunnable {
     constructor(resourcePath) {
@@ -43,7 +43,7 @@ class Parser extends AsyncFsRunnable {
             let data = yield this.readFile(filePath);
             let $ = cheerio.load(data, {normalizeWhitespace: true});
             let baseName = path.basename(filePath);
-            let post = Post.getPost($, baseName, filePath);
+            let post = yield getPost($, baseName, filePath);
             if (this.progressBar) {
                 this.progressBar.tick({
                     'file': baseName,
