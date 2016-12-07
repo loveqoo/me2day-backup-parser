@@ -76,10 +76,14 @@ class Repository extends AsyncFsRunnable {
             if (!exists) {
                 yield this.createDirectory(directoryPath);
             }
-            for (let key of this.data) {
-                let filePath = path.join(directoryPath, `${key}.json`);
-                yield this.writeFile(filePath, JSON.stringify(this.data[key]));
+            let savePromiseList = [];
+            for (let key of Object.keys(this.data)) {
+                savePromiseList.push(this.run(function *(){
+                  let filePath = path.join(directoryPath, `${key}.json`);
+                  yield this.writeFile(filePath, JSON.stringify(this.data[key]));
+                }));
             }
+            yield savePromiseList;
         });
     }
 
@@ -107,7 +111,10 @@ class Repository extends AsyncFsRunnable {
     get(key, id, f = (o) => JSON.parse(o)) {
         !(key && id) && this.throwError();
         return new Promise((fulfill)=> {
-            let result = this.data[key];
+            if (!this.data[key]) {
+              this.data[key] = {};
+            }
+            let result = this.data[key][id];
             fulfill(result ? f(result) : undefined);
         });
     }
@@ -139,6 +146,9 @@ class Repository extends AsyncFsRunnable {
     set(key, id, obj, f = (o) => JSON.stringify(o)) {
         !(key && id && obj) && this.throwError();
         return new Promise((fulfill)=> {
+            if (!this.data[key]) {
+                this.data[key] = {};
+            }
             this.data[key][id] = f(obj);
             fulfill();
         });

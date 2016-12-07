@@ -11,6 +11,14 @@ const util = {
   toContent(rawText) {
     return toMarkdown(rawText.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, ''));
   },
+  extractIdList (objectList, callback = () => {}) {
+    let result = [];
+    for (let obj of objectList) {
+      callback(obj);
+      result.push(obj['id']);
+    }
+    return result;
+  },
   extractPeopleIdByImageUri (imageUri) {
     let regex = new RegExp("/img/images/user/(.+)/profile.png"), peopleId;
     if (imageUri.includes('/img/images/user/')) {
@@ -22,7 +30,7 @@ const util = {
       var parsed = imageUri.split('/')[3].split('_'),
         validLength = parsed.length - 2,
         temp = [];
-      parsed.forEach((str, index)=> {
+      parsed.forEach((str, index) => {
         if (index < validLength) {
           temp.push(str);
         }
@@ -30,6 +38,52 @@ const util = {
       peopleId = temp.join('_');
     }
     return peopleId;
+  },
+  save(repository, targetMap){
+    return co(function *(){
+      let savePromiseList = [];
+      for (let key of Object.keys(targetMap)) {
+        let value = targetMap[key];
+        if (Array.isArray(value)) {
+          for (let valueItem of value) {
+            savePromiseList.push(co(function *(){
+              yield repository.set(key, valueItem.id, valueItem);
+            }));
+          }
+        } else {
+          savePromiseList.push(co(function *(){
+            yield repository.set(key, value.id, value);
+          }));
+        }
+      }
+      return yield savePromiseList;
+    });
+  }
+};
+
+const relate = {
+  postAndPeople(post, people){
+    post.writerId = people.id;
+    people.postIdList.push(post.id);
+  },
+  postAndTags(post, tags){
+    post.tagIdList = util.extractIdList(tags, (tag) => {
+      tag.postIdList.push(post.id);
+    });
+  },
+  postAndMetooPeopleList(post, metooPeopleList) {
+    post.metooPeopleIdList = util.extractIdList(metooPeopleList, (people) => {
+      people.metooPostIdList.push(post.id);
+    });
+  },
+  postAndCommentList(post, commentList){
+    post.commentIdList = util.extractIdList(commentList, (comment) => {
+      comment.postId = post.id;
+    })
+  },
+  commentAndPeople(comment, people){
+    comment.writerId = people.id;
+    people.commentIdList.push(comment.id);
   }
 };
 
@@ -45,7 +99,7 @@ class People {
 
 class Tag {
   constructor(id) {
-    this.id;
+    this.id = id;
     this.content;
     this.postIdList = [];
   }
@@ -75,9 +129,9 @@ class Post {
 }
 const sequencer = new Sequencer(), repository = new Repository();
 
-const getPost = ($, resourcePath)=> {
-  return co(function *(){
-    let post = yield repository.getOne('Post', (target)=>{
+const getPost = ($, resourcePath) => {
+  return co(function *() {
+    let post = yield repository.getOne('Post', (target) => {
       return target.resourcePath === resourcePath;
     });
     if (post) {
@@ -91,8 +145,9 @@ const getPost = ($, resourcePath)=> {
     return post;
   });
 };
-const getPeople = ($image)=> {
-  return co(function *(){
+
+const getPeople = ($image) => {
+  return co(function *() {
     let imagePath = $image.attr('src');
     let peopleId = util.extractPeopleIdByImageUri(imagePath);
     let people = yield repository.get('People', peopleId);
@@ -102,43 +157,107 @@ const getPeople = ($image)=> {
     people = new People(peopleId);
     people.nickname = $image.attr('alt');
     people.profileImagePath = imagePath;
+    yield repository.set('People', people.id, people);
     return people;
   });
 };
 
-const getTags = ($)=> {
+const getMetooPeopleList = ($) => {
+  return co(function *() {
+    let metooList = [], $metooPeopleImageList = $('a.pi_s.profile_popup.no_link img');
+    $metooPeopleImageList.each((idx, image)=>{
+      let $image = $(image);
+      metooList.push(Promise.resolve(getPeople($image)));
+    });
+    return yield metooList;
+  });
+};
+
+const getTag = (tagText)=> {
   return co(function *(){
-    let tagList = [], tagTextList = $.find('p.post_tag').text().replace(/[;|\/|\_|\-|\.]/g, '').split(' ');
-    for (let tagText of tagTextList) {
-      let trimmed = tagText.trim();
-      if (!trimmed) {
-        continue;
-      }
-      let tag = repository.getOne('Tag', (target)=> {
-        return target.content === trimmed;
-      });
-      if (tag) {
-        tagList.push(tag);
-        continue;
-      }
-      tag = new Tag(yield sequencer.get('Tag'));
-      tag.content = trimmed;
-      tagList.push(tag);
+    let trimmed = tagText.trim();
+    if (!trimmed) {
+      return;
     }
-    return tagList;
+    let tag = yield repository.getOne('Tag', (target) => {
+      return target.content === trimmed;
+    });
+    if (tag) {
+      return tag;
+    }
+    tag = new Tag(yield sequencer.get('Tag'));
+    tag.content = trimmed;
+    yield repository.set('Tag', tag.id, tag);
+    return tag;
+  });
+};
+
+const getTags = ($) => {
+  return co(function *() {
+    let tagPromiseList = [], tagTextList = $('p.post_tag').text().replace(/[;|\/|\_|\-|\.]/g, '').split(' ');
+    for (let tagText of tagTextList) {
+      tagPromiseList.push(getTag(tagText));
+    }
+    let tagList = yield tagPromiseList;
+    return tagList.filter((tag)=> { return typeof tag !== 'undefined';});
+  });
+};
+
+const getComment = ($comment)=> {
+  return co(function *(){
+    let comment = new Comment(yield sequencer.get('Comment'));
+    comment.content = toMarkdown($comment.find('p.para').html());
+    comment.timestamp = util.toTimestamp($comment.find('span.comment_time').text());
+    let writer = yield getPeople($comment.find('a.comment_profile.profile_popup.no_link img'));
+    relate.commentAndPeople(comment, writer);
+    return [comment, writer];
+  });
+};
+
+const getCommentList = ($) => {
+  return co(function *() {
+    let commentPromiseList = [], $commentItemList = $('div.comment_item');
+    $commentItemList.each((idx, commentItem)=>{
+      commentPromiseList.push(getComment($(commentItem)));
+    });
+    let commandWriterList = yield commentPromiseList,
+      commentList = [], writerList = [];
+    for (let commandWriter of commandWriterList) {
+      commentList.push(commandWriter[0]);
+      writerList.push(commandWriter[1]);
+    }
+    return [commentList, writerList];
   });
 };
 
 module.exports = ($, resourcePath) => {
-  return co(function *(){
-      yield [sequencer.load(), repository.load(['Post', 'People', 'Comment', 'Tag'])];
-      let post = yield getPost($, resourcePath);
-      let writer = yield getPeople($.find('img.profile_img'));
-      let tags = yield getTags($);
-      post.writerId = writer.id;
-      writer.postIdList.push(post.id);
+  return co(function *() {
+    yield [sequencer.load(), repository.load(['Post', 'People', 'Comment', 'Tag'])];
 
+    let post = yield getPost($, resourcePath);
 
-      return post;
+    let writer = yield getPeople($('img.profile_img'));
+    relate.postAndPeople(post, writer);
+    yield repository.set('People', writer.id, writer);
+
+    let tags = yield getTags($);
+    relate.postAndTags(post, tags);
+    yield util.save(repository, {Tag: tags});
+
+    let metooPeopleList = yield getMetooPeopleList($);
+    relate.postAndMetooPeopleList(post, metooPeopleList);
+    yield util.save(repository, {People: metooPeopleList});
+
+    let [commentList, writerList] = yield getCommentList($);
+    relate.postAndCommentList(post, commentList);
+    yield util.save(repository, {Comment: commentList});
+    yield util.save(repository, {People: writerList});
+
+    yield repository.set('Post', post.id, post);
+
+    yield sequencer.save();
+    yield repository.save();
+
+    return post;
   });
 };
