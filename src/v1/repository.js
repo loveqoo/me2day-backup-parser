@@ -108,7 +108,7 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    get(key, id, f = (o) => JSON.parse(o)) {
+    get(key, id, f = (o) => o) {
         !(key && id) && this.throwError();
         return new Promise((fulfill)=> {
             if (!this.data[key]) {
@@ -143,7 +143,7 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    set(key, id, obj, f = (o) => JSON.stringify(o)) {
+    set(key, id, obj, f = (o) => o) {
         !(key && id && obj) && this.throwError();
         return new Promise((fulfill)=> {
             if (!this.data[key]) {

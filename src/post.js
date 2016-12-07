@@ -219,6 +219,7 @@ const getComment = ($comment)=> {
     comment.timestamp = util.toTimestamp($comment.find('span.comment_time').text());
     let writer = yield getPeople($comment.find('a.comment_profile.profile_popup.no_link img'));
     relate.commentAndPeople(comment, writer);
+    yield repository.set('People', writer.id, writer);
     return [comment, writer];
   });
 };
