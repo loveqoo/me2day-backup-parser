@@ -1,4 +1,5 @@
 'use strict';
+const path = require('path');
 const toMarkdown = require('to-markdown');
 const Repository = require('./v1/repository');
 const Sequencer = require('./v1/sequencer');
@@ -125,6 +126,7 @@ class Post {
     this.content;
     this.tagIdList = [];
     this.commentIdList = [];
+    this.imageList = [];
   }
 }
 const sequencer = new Sequencer(), repository = new Repository();
@@ -142,6 +144,13 @@ const getPost = ($, resourcePath) => {
     post.timestamp = util.toTimestamp($('span.post_permalink').html());
     post.content = util.toContent($('p.post_body').html());
     post.title = post.content.length > 30 ? post.content.substring(0, 30) + '...' : post.content;
+    $('a.per_img.photo').each((idx, anchor)=> {
+      let $anchor = $(anchor), $image = $anchor.find('img');
+      post.imageList.push({
+        thumbnail: path.join(resourcePath, '..', $image.attr('src')),
+        original: path.join(resourcePath, '..', $anchor.attr('href'))
+      });
+    });
     return post;
   });
 };
