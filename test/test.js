@@ -4,7 +4,7 @@ const assert = require('assert'),
     it = require('mocha').it,
     describe = require('mocha').describe,
     path = require('path'),
-    Dispatcher = require('../src/Dispather');
+    Dispatcher = require('../src/Dispatcher');
 
 describe('Parse', function () {
     this.timeout(4000000);
