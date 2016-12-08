@@ -25,7 +25,7 @@ class Dispatcher extends AsyncFsRunnable {
                     return path.extname(file) === '.html';
                 });
 
-                //files.splice(100, Number.MAX_VALUE);
+                //files.splice(2, Number.MAX_VALUE);
 
                 yield this.parser.init();
 

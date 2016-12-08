@@ -62,11 +62,9 @@ class Parser extends AsyncFsRunnable {
 
     done() {
         return this.run(function *(){
-            this.repository.showProgressBar = true;
             yield [this.sequencer.save(), this.repository.save('People', 'Tag', 'Post', 'Comment')];
             // yield this.repository.loadPartial('Comment');
             // yield this.repository.save('Comment');
-            this.repository.showProgressBar = false;
         });
     }
 
@@ -111,7 +109,7 @@ class Parser extends AsyncFsRunnable {
             post.resourcePath = resourcePath;
             post.timestamp = this.toTimestamp($('span.post_permalink').html());
             post.content = this.toContent($('p.post_body').html());
-            post.rawContent = $('p.post_body').text();
+            post.rawContent = $('<p>' + this.toRawContent($('p.post_body').html()) + '</p>').text();
             post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
             $('a.per_img.photo').each((idx, anchor)=> {
                 let $anchor = $(anchor), $image = $anchor.find('img');
@@ -244,8 +242,12 @@ class Parser extends AsyncFsRunnable {
     };
 
     toContent(rawText) {
-        return toMarkdown(rawText.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, ''));
+        return toMarkdown(this.toRawContent(rawText));
     };
+
+    toRawContent(rawText) {
+        return rawText.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, '');
+    }
 
     extractIdList(objectList, callback = () => {
     }) {
