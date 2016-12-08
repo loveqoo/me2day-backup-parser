@@ -36,10 +36,7 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 .idea/
-Comment.json
-Post.json
-Tag.json
-People.json
+.repo/*
 *.heapsnapshot
 *.bak
 src/*.json

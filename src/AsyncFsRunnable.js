@@ -34,8 +34,8 @@ class AsyncFsRunnable {
                 this.log(e);
             });
         if (this.isFunction(callback)) {
-            f.then(() => {
-                return callback(arguments);
+            f.then((...data) => {
+                return callback(...data);
             });
         }
         return f;

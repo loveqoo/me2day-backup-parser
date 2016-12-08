@@ -4,15 +4,15 @@ const assert = require('assert'),
     it = require('mocha').it,
     describe = require('mocha').describe,
     path = require('path'),
-    Parser = require('../src/index');
+    Dispatcher = require('../src/Dispather');
 
 describe('Parse', function () {
-    this.timeout(40000);
+    this.timeout(4000000);
     it('# parse file', function (done) {
-        //let parser = new Parser(path.join('/Users/anthony/Documents/backup/me2day/garangnip/post'));
-        let parser = new Parser(path.join(__dirname, 'resource.html'));
-        parser.debug();
-        parser.parse(()=>{
+        let dispatcher = new Dispatcher(path.join('/Users/anthony/Documents/backup/me2day/garangnip/post'));
+        //let dispatcher = new Dispatcher(path.join(__dirname, 'resource.html'));
+        //dispatcher.debug();
+        dispatcher.execute(()=>{
             done();
         });
     });

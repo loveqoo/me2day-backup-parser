@@ -1,12 +1,15 @@
 'use strict';
 
 const path = require('path');
-const AsyncFsRunnable = require('../AsyncFsRunnable');
+const AsyncFsRunnable = require('./AsyncFsRunnable');
 
 class Sequencer extends AsyncFsRunnable {
     constructor() {
         super();
-        this.defaultFilePath = path.join(__dirname, 'sequencer.json');
+        this.pwd = process.env.PWD;
+        this.defaultFolderName = '.repo';
+        this.defaultDirPath = path.join(this.pwd, this.defaultFolderName);
+        this.defaultFilePath = path.join(this.defaultDirPath, 'sequencer.json');
     }
 
     get(key) {
@@ -27,7 +30,8 @@ class Sequencer extends AsyncFsRunnable {
         return this.run(function *() {
             let isExist = yield this.isExist(this.defaultFilePath);
             if (isExist) {
-                this.data = JSON.parse(yield this.readFile(this.defaultFilePath));
+                let prevRawData = yield this.readFile(this.defaultFilePath);
+                this.data = prevRawData ? JSON.parse(prevRawData) : {};
             } else {
                 this.data = {};
             }
@@ -36,7 +40,13 @@ class Sequencer extends AsyncFsRunnable {
 
     save() {
         !(this.data) && this.throwError(`The load() must be executed first.`);
-        return this.writeFile(this.defaultFilePath, JSON.stringify(this.data));
+        return this.run(function *(){
+            let isExist = yield this.isExist(this.defaultDirPath);
+            if (!isExist) {
+                yield this.createDirectory(this.defaultDirPath);
+            }
+            yield this.writeFile(this.defaultFilePath, JSON.stringify(this.data));
+        });
     }
 }
 

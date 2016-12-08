@@ -3,16 +3,17 @@ const path = require('path');
 const cheerio = require('cheerio');
 const ProgressBar = require('progress');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
-const getPost = require('./post');
+const Parser = require('./Parser');
 
-class Parser extends AsyncFsRunnable {
+class Dispatcher extends AsyncFsRunnable {
     constructor(resourcePath) {
         super();
         this.resourcePath = resourcePath;
         this.progressBar = undefined;
+        this.parser = new Parser();
     }
 
-    parse(callback) {
+    execute(callback) {
         this.run(function *() {
             let exists = yield this.isExist(this.resourcePath);
             if (!exists) {
@@ -23,15 +24,30 @@ class Parser extends AsyncFsRunnable {
                 let files = yield this.getFileList(this.resourcePath, (file)=> {
                     return path.extname(file) === '.html';
                 });
-                this.enableProgressBar(files.length);
 
-                let promiseList = [];
-                for (let file of files) {
-                    promiseList.push(this.parseFile(path.join(this.resourcePath, file)));
-                }
-                yield promiseList;
+                //files.splice(100, Number.MAX_VALUE);
+
+                yield this.parser.init();
+
+                let fileIterator = files[Symbol.iterator]();
+                let parseEachFile = () => {
+                    return this.run(function *(){
+                        let item = fileIterator.next();
+                        if (item.done) {
+                            yield this.parser.done();
+                            return;
+                        }
+                        yield this.parseFile(path.join(this.resourcePath, item.value)).then(()=> {
+                            return parseEachFile();
+                        });
+                    });
+                };
+                this.enableProgressBar(files.length);
+                return yield Promise.resolve(parseEachFile());
             } else if (stats.isFile()) {
+                yield this.parser.init();
                 yield this.parseFile(this.resourcePath);
+                yield this.parser.done();
             } else {
                 this.throwError(`${this.resourcePath} is NOT directory or file.`);
             }
@@ -43,16 +59,17 @@ class Parser extends AsyncFsRunnable {
             let data = yield this.readFile(filePath);
             let $ = cheerio.load(data, {normalizeWhitespace: true});
             let baseName = path.basename(filePath);
-            let post = yield getPost($, baseName, filePath);
-            if (this.progressBar) {
-                this.progressBar.tick({
-                    'file': baseName,
-                    'content': post.content.substring(0, 30)
-                });
-            } else {
-                this.log(`[INFO] File: ${filePath}`);
-                this.log(`[INFO] ${post.id} ${post.content} at ${post.timestamp}`);
-            }
+            let post = yield this.parser.execute($, filePath, (post) => {
+                if (this.progressBar) {
+                    this.progressBar.tick({
+                        'file': baseName,
+                        'content': post.title
+                    });
+                } else {
+                    this.log(`[INFO] File: ${filePath}`);
+                    this.log(`[INFO] ${post.id} ${post.content} at ${post.timestamp}`);
+                }
+            });
         });
     }
 
@@ -69,4 +86,4 @@ class Parser extends AsyncFsRunnable {
     }
 }
 
-module.exports = Parser;
+module.exports = Dispatcher;

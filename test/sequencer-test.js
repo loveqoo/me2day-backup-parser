@@ -1,5 +1,5 @@
 const assert = require('assert');
-const sequencer = require('../src/v1/sequencer');
+const sequencer = require('../src/Sequencer');
 const _ = require('lodash');
 const cluster = require('cluster');
 

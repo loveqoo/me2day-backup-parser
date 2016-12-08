@@ -2,98 +2,133 @@
 const co = require('co');
 const fs = require('graceful-fs');
 const path = require('path');
-const AsyncFsRunnable = require('../AsyncFsRunnable');
+const ProgressBar = require('progress');
+const AsyncFsRunnable = require('./AsyncFsRunnable');
 
 class Repository extends AsyncFsRunnable {
 
     constructor() {
         super();
+        this.pwd = process.env.PWD;
         this.defaultFolderName = '.repo';
+        this.showProgressBar = false;
+        this.directoryPath = path.join(this.pwd, this.defaultFolderName);
     }
 
     load(keys) {
         return this.run(function *() {
             this.data = {};
+            let exists = yield this.isExist(this.directoryPath);
+            if (!exists) {
+                return;
+            }
+            let stats = yield this.getStats(this.directoryPath);
+            if (!stats.isDirectory()) {
+                return;
+            }
             for (let key of keys) {
-                let directoryPath = path.join(__dirname, this.defaultFolderName, key);
-                let exists = yield this.isExist(directoryPath);
-                let stats = yield this.getStats(directoryPath);
                 this.data[key] = {};
-                if (exists && stats.isDirectory()) {
-                    let files = yield this.getFileList(path.join(directoryPath, key), (file)=> {
-                        return path.extname(file) === '.json';
-                    });
-                    for (let file of files) {
-                        let filePath = path.join(directoryPath, file);
-                      this.data[key] = JSON.parse(yield this.readFile(filePath));
-                    }
-                } else {
-                    this.data[key] = {};
+                let filePath = path.join(this.directoryPath, `${key}.json`);
+                exists = yield this.isExist(filePath);
+                if (!exists) {
+                    continue;
                 }
+                this.data[key] = JSON.parse(yield this.readFile(filePath));
             }
         });
     }
 
-    loadPartial(keys) {
+    loadPartial(...keys) {
         return this.run(function *() {
             this.data = {};
             for (let key of keys) {
-                let rootDirectoryPath = path.join(__dirname, this.defaultFolderName, key);
-                let rootExists = yield this.isExist(rootDirectoryPath);
-                let rootStats = yield this.getStats(rootDirectoryPath);
                 this.data[key] = {};
-                if (rootExists && rootStats.isDirectory()) {
-                    let partialDirectories = yield this.getFileList(rootDirectoryPath); // .repo/${key}/partial-n
-                    for (let partialDirectory of partialDirectories) {
-                        let partialExists = yield this.isExist(partialDirectory);
-                        let partialStats = yield this.getStats(partialDirectory);
+                let rootDirectoryPath = path.join(this.directoryPath, key);
+                let rootExists = yield this.isExist(rootDirectoryPath);
+                if (!rootExists) {
+                    return;
+                }
+                let rootStats = yield this.getStats(rootDirectoryPath);
+                if (!rootStats.isDirectory()) {
+                    return;
+                }
+                let partialDirectories = yield this.getFileList(rootDirectoryPath); // .repo/${key}/partial-n
+                for (let partialDirectory of partialDirectories) {
+                    let partialDirectoryPath = path.join(rootDirectoryPath, partialDirectory);
+                    let partialExists = yield this.isExist(partialDirectoryPath);
+                    let partialStats = yield this.getStats(partialDirectoryPath);
 
-                        if (!partialExists || !partialStats.isDirectory()) {
-                            continue;
-                        }
-                        let files = yield this.getFileList(path.join(rootDirectoryPath, partialDirectory), (file)=> {
-                            return path.extname(file) === '.json';
-                        });
-                        for (let file of files) {
-                            let filePath = path.join(rootDirectoryPath, subDirectory, file);
-                            let prevData = JSON.parse(yield this.readFile(filePath));
-                            let id = path.parse(file).name;
-                            this.data[key][id] = prevData;
-                        }
+                    if (!partialExists || !partialStats.isDirectory()) {
+                        continue;
                     }
-                } else {
-                    this.data[key] = {};
+                    let files = yield this.getFileList(partialDirectoryPath, (file)=> {
+                        return path.extname(file) === '.json';
+                    });
+                    if (!files || files.length === 0) {
+                        continue;
+                    }
+                    for (let file of files) {
+                        let filePath = path.join(partialDirectoryPath, file);
+                        this.data[key][path.parse(file).name] = JSON.parse(yield this.readFile(filePath));
+                    }
                 }
             }
         });
     }
 
-    save() {
+    save(...keys) {
         !(this.data) && this.throwError(`The load() must be executed first.`);
         return this.run(function *() {
-            let directoryPath = path.join(__dirname, this.defaultFolderName);
-            let exists = yield this.isExist(directoryPath);
+            let exists = yield this.isExist(this.directoryPath);
             if (!exists) {
-                yield this.createDirectory(directoryPath);
+                yield this.createDirectory(this.directoryPath);
             }
-            let savePromiseList = [];
-            for (let key of Object.keys(this.data)) {
-                savePromiseList.push(this.run(function *(){
-                  let filePath = path.join(directoryPath, `${key}.json`);
-                  yield this.writeFile(filePath, JSON.stringify(this.data[key]));
-                }));
+            if (this.showProgressBar) {
+                let saveFileCount = 0;
+                for (let key of keys) {
+                    saveFileCount += Object.keys(this.data[key]).length;
+                }
+                var progressBar = new ProgressBar('   Saving [:bar] :percent :etas :status', {
+                    complete: '=',
+                    incomplete: ' ',
+                    width: 30,
+                    total: saveFileCount
+                });
             }
-            yield savePromiseList;
+            let targetKeys = keys && keys.length > 0 ? keys : Object.keys(this.data);
+            for (let key of targetKeys) {
+                let filePath = path.join(this.directoryPath, `${key}.json`);
+                yield this.writeFile(filePath, JSON.stringify(this.data[key]));
+                this.showProgressBar && progressBar.tick({
+                    'status': `${filePath}`
+                });
+            }
         });
     }
 
-    savePartial() {
+    savePartial(...keys) {
         !(this.data) && this.throwError(`The loadPartial() must be executed first.`);
         return this.run(function *() {
             let directoryCache = {};
-            for (let key of this.data) {
-                for (let id of this.data[key]) {
-                    let directoryPath = path.join(__dirname, this.defaultFolderName, key, `partial-${Math.floor(id / 1000)}`);
+            let targetKeys = keys && keys.length > 0 ? keys : Object.keys(this.data);
+            let getPartialPath = (id)=>{
+                if (parseInt(id, 10)) {
+                    return `partial-${Math.floor(parseInt(id,10) / 1000)}`;
+                } else {
+                    return `partial-${id.substring(0,1)}`;
+                }
+            };
+            for (let key of targetKeys) {
+                let keyData = this.data[key];
+                if (!keyData) {
+                    continue;
+                }
+                for (let id of Object.keys(keyData)) {
+                    let directoryPath = path.join(this.directoryPath, key, getPartialPath(id));
+                    // let exists = yield this.isExist(directoryPath);
+                    // if (!exists) {
+                    //     yield this.createDirectory(directoryPath);
+                    // }
                     if (!directoryCache[directoryPath]) {
                         let exists = yield this.isExist(directoryPath);
                         if (!exists) {
@@ -102,7 +137,7 @@ class Repository extends AsyncFsRunnable {
                         directoryCache[directoryPath] = true;
                     }
                     let filePath = path.join(directoryPath, `${id}.json`);
-                    yield this.writeFile(filePath, JSON.stringify(this.data[key][id]));
+                    yield this.writeFile(filePath, JSON.stringify(keyData[id]));
                 }
             }
         });
@@ -112,20 +147,24 @@ class Repository extends AsyncFsRunnable {
         !(key && id) && this.throwError();
         return new Promise((fulfill)=> {
             if (!this.data[key]) {
-              this.data[key] = {};
+                this.data[key] = {};
             }
             let result = this.data[key][id];
             fulfill(result ? f(result) : undefined);
         });
     }
 
-    list(key, filter, f = (o) => JSON.parse(o)) {
+    list(key, filter, f = (o) => o) {
         !(key && this.isFunction(filter)) && this.throwError();
         return new Promise((fulfill)=> {
             let keyData = this.data[key];
             let result = [];
-            for (let id of keyData) {
-                filter(keyData[id]) && result.push(f(keyData[id]));
+            if (!keyData) {
+                fulfill(result);
+                return;
+            }
+            for (let id of Object.keys(keyData)) {
+                keyData[id] && filter(keyData[id]) && result.push(f(keyData[id]));
             }
             fulfill(result);
         });
@@ -152,6 +191,13 @@ class Repository extends AsyncFsRunnable {
             this.data[key][id] = f(obj);
             fulfill();
         });
+    }
+
+    clean(...keys){
+        let targetKeys = keys && keys.length > 0 ? keys : Object.keys(this.data);
+        for (let key of targetKeys) {
+            this.data[key] = undefined;
+        }
     }
 }
 

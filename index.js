@@ -5,7 +5,7 @@ const co = require('co');
 const cheerio = require('cheerio');
 const promises = require('./src/v1/promises');
 const parser = require('./src/v1/parser');
-const repository = require('./src/v1/repository');
+const repository = require('./src/Repository');
 const context = require('./src/v1/context');
 
 
