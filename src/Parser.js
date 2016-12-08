@@ -111,7 +111,8 @@ class Parser extends AsyncFsRunnable {
             post.resourcePath = resourcePath;
             post.timestamp = this.toTimestamp($('span.post_permalink').html());
             post.content = this.toContent($('p.post_body').html());
-            post.title = post.content.length > 30 ? post.content.substring(0, 30) + '...' : post.content;
+            post.rawContent = $('p.post_body').text();
+            post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
             $('a.per_img.photo').each((idx, anchor)=> {
                 let $anchor = $(anchor), $image = $anchor.find('img');
                 post.imageList.push({
