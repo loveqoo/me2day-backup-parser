@@ -1,4 +1,5 @@
 'use strict';
+const EOL = require('os').EOL;
 const co = require('co');
 const fs = require('graceful-fs');
 const path = require('path');
@@ -14,7 +15,7 @@ class Repository extends AsyncFsRunnable {
         this.onLoad = {};
     }
 
-    load(keys) {
+    load(...keys) {
         return this.run(function *() {
             this.data = {};
             let exists = yield this.isExist(this.directoryPath);
@@ -202,6 +203,14 @@ class Repository extends AsyncFsRunnable {
         for (let key of targetKeys) {
             this.data[key] = undefined;
         }
+    }
+
+    toString(){
+        let result = [];
+        for (let key of Object.keys(this.data)) {
+            result.push(`${key} : ${Object.keys(this.data[key]).length}`);
+        }
+        return result.join(EOL);
     }
 }
 

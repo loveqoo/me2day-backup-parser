@@ -1,4 +1,5 @@
 'use strict';
+const EOL = require('os').EOL;
 const path = require('path');
 const moment = require('moment');
 const toMarkdown = require('to-markdown');
@@ -136,7 +137,7 @@ class Post extends Me2day {
                 for (let comment of this.getCommentList()) {
                     commentText.push(comment.toString());
                 }
-                return commentText.join('\r\n');
+                return commentText.join(EOL);
             };
         result.push(`Post ID: ${this.id}`);
         result.push(`Content: ${this.rawContent}`);
@@ -146,7 +147,7 @@ class Post extends Me2day {
         result.push(`Comment: `);
         result.push(getComment());
         result.push('');
-        return result.join('\r\n');
+        return result.join(EOL);
     }
 }
 

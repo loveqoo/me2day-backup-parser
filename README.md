@@ -41,5 +41,12 @@ node
 > console.log(`Comment count: ${Object.keys(Comment).length}`);
 > console.log(Post[Object.keys(Post)[0]].toString());
 ```
+### You can still access the data after parse.
+```sh
+node
+> const parser = require('./index');
+> let repository = parser.load(()=> { console.log('done');});
+> console.log(repository.toString());
+```
 ## License
 MIT
