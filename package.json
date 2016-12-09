@@ -1,7 +1,7 @@
 {
   "name": "me2day-backup-parser",
   "version": "1.0.0",
-  "description": "",
+  "description": "Parser for me2day backup files",
   "main": "index.js",
   "scripts": {
     "test": "mocha ./test/test.js"
@@ -26,7 +26,6 @@
     "lodash": "^4.17.2",
     "mkdirp": "^0.5.1",
     "progress": "^1.1.8",
-    "rwlock": "^5.0.0",
     "to-markdown": "^3.0.3"
   },
   "devDependencies": {
