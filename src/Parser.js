@@ -1,155 +1,16 @@
 'use strict';
-const EOL = require('os').EOL;
 const path = require('path');
-const moment = require('moment');
 const toMarkdown = require('to-markdown');
 const Repository = require('./Repository');
 const Sequencer = require('./Sequencer');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
+const Domain = require('./Domain');
 
-class Me2day {
-    constructor() {
-    }
-
-    static fromJSON(json) {
-        const obj = JSON.parse(json);
-        let result = new this(obj.id);
-        for (let key of Object.keys(obj)) {
-            result[key] = obj[key];
-        }
-        return result;
-    }
-
-    toDateString(obj) {
-        return obj ? moment(obj).format('YYYY-MM-DD HH:mm:ss') : '';
-    }
-}
-
-class People extends Me2day {
-    constructor(id) {
-        super();
-        this.id = id;
-        this.profileImagePath;
-        this.postIdList = [];
-        this.commentIdList = [];
-        this.metooPostIdList = [];
-    }
-
-    getPostList() {
-        return this.repository.direct().in('Post', this.postIdList);
-    }
-
-    getCommentList() {
-        return this.repository.direct().in('Comment', this.commentIdList);
-    }
-
-    getMetooPostList() {
-        return this.repository.direct().in('Post', this.metooPostIdList);
-    }
-}
-
-class Tag extends Me2day {
-    constructor(id) {
-        super();
-        this.id = id;
-        this.content;
-        this.postIdList = [];
-    }
-
-    getPostList() {
-        return this.repository.direct().in('Post', this.postIdList);
-    }
-
-}
-
-class Comment extends Me2day {
-    constructor(id) {
-        super();
-        this.id = id;
-        this.postId;
-        this.writerId;
-        this.timestamp;
-        this.content;
-        this.rawContent;
-    }
-
-    getWriter() {
-        return this.repository.direct().one('People', this.writerId);
-    }
-
-    getPost() {
-        return this.repository.direct().one('Post', this.postId);
-    }
-
-    toString() {
-        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.rawContent}`;
-    }
-}
-
-class Post extends Me2day {
-    constructor(id) {
-        super();
-        this.id = id;
-        this.writerId;
-        this.resourcePath;
-        this.metooPeopleIdList = [];
-        this.timestamp;
-        this.title;
-        this.content;
-        this.rawContent;
-        this.tagIdList = [];
-        this.commentIdList = [];
-        this.imageList = [];
-    }
-
-    getWriter() {
-        return this.repository.direct().one('People', this.writerId);
-    }
-
-    getMetooPeopleList() {
-        return this.repository.direct().in('People', this.metooPeopleIdList);
-    }
-
-    getTagList() {
-        return this.repository.direct().in('Tag', this.tagIdList);
-    }
-
-    getCommentList() {
-        return this.repository.direct().in('Comment', this.commentIdList);
-    }
-
-    toString() {
-        let result = [],
-            getTags = () => {
-                let tagText = [];
-                for (let tag of this.getTagList()) {
-                    tagText.push(tag.content);
-                }
-                return tagText.join(' ');
-            }, getMetoo = () => {
-                let metooIds = [];
-                for (let people of this.getMetooPeopleList()) {
-                    metooIds.push(people.id);
-                }
-                return metooIds.join(',');
-            }, getComment = () => {
-                let commentText = [];
-                for (let comment of this.getCommentList()) {
-                    commentText.push(comment.toString());
-                }
-                return commentText.join(EOL);
-            };
-        result.push(`Post ID: ${this.id}`);
-        result.push(`Content: ${this.rawContent}`);
-        result.push(`Time: ${this.toDateString(this.timestamp)}`);
-        result.push(`Tags: ${getTags()}`);
-        result.push(`Metoo: ${getMetoo()}`);
-        result.push(`Comment: `);
-        result.push(getComment());
-        result.push('');
-        return result.join(EOL);
-    }
-}
+const Me2day = Domain.Me2day;
+const People = Domain.People;
+const Post = Domain.Post;
+const Tag = Domain.Tag;
+const Comment = Domain.Comment;
 
 class Parser extends AsyncFsRunnable {
     constructor() {
@@ -157,10 +18,10 @@ class Parser extends AsyncFsRunnable {
         this.sequencer = new Sequencer();
         this.repository = new Repository();
         Me2day.prototype.repository = this.repository;
-        this.repository.onLoad.Post = Post.fromJSON
-        this.repository.onLoad.Tag = Tag.fromJSON
-        this.repository.onLoad.Comment = Comment.fromJSON
-        this.repository.onLoad.People = People.fromJSON
+        this.repository.onLoad.Post = rawText => Post.fromJSON(rawText);
+        this.repository.onLoad.Tag = rawText => Tag.fromJSON(rawText);
+        this.repository.onLoad.Comment = rawText => Comment.fromJSON(rawText);
+        this.repository.onLoad.People = rawText => People.fromJSON(rawText);
     }
 
     init() {

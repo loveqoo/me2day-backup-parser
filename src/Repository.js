@@ -135,7 +135,7 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    direct(){
+    direct() {
         const that = this;
         return {
             in(key, idList){
@@ -205,7 +205,7 @@ class Repository extends AsyncFsRunnable {
         }
     }
 
-    toString(){
+    toString() {
         let result = [];
         for (let key of Object.keys(this.data)) {
             result.push(`${key} : ${Object.keys(this.data[key]).length}`);
