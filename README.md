@@ -39,6 +39,7 @@ node
 > console.log(`People count: ${Object.keys(People).length}`);
 > console.log(`Tag count: ${Object.keys(Tag).length}`);
 > console.log(`Comment count: ${Object.keys(Comment).length}`);
+> console.log(Post[Object.keys(Post)[0]].toString());
 ```
 ## License
 MIT

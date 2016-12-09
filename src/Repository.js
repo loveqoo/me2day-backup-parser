@@ -134,6 +134,30 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
+    direct(){
+        const that = this;
+        return {
+            in(key, idList){
+                !(key && idList) && this.throwError();
+                if (!that.data[key]) {
+                    return [];
+                }
+                let result = [];
+                for (let id of idList) {
+                    result.push(that.data[key][id]);
+                }
+                return result;
+            },
+            one(key, id){
+                !(key && id) && this.throwError();
+                if (!that.data[key]) {
+                    return;
+                }
+                return that.data[key][id];
+            }
+        };
+    }
+
     list(key, filter, f = (o) => o) {
         !(key && this.isFunction(filter)) && this.throwError();
         return new Promise((fulfill) => {
