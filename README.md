@@ -11,7 +11,7 @@ cd me2day-backup-parser
 npm install
 node backup-parser.js ${your-backup-dir}
 ```
-`${your-backup-dir} may be ${backup-root}/me2day/yourId/post`
+`${your-backup-dir} maybe ${backup-root}/me2day/yourId/post`
 
 When the parse works is finished, a `.repo` folder is created.
 And you can see the list of files as below.
