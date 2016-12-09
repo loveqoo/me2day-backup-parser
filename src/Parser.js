@@ -5,8 +5,23 @@ const Repository = require('./Repository');
 const Sequencer = require('./Sequencer');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
 
-class People {
+class Me2day {
+    constructor() {
+    }
+
+    static fromJSON(json) {
+        const obj = JSON.parse(json);
+        let result = new this(obj.id);
+        for (let key of Object.keys(obj)) {
+            result[key] = obj[key];
+        }
+        return result;
+    }
+}
+
+class People extends Me2day {
     constructor(id) {
+        super();
         this.id = id;
         this.profileImagePath;
         this.postIdList = [];
@@ -15,16 +30,19 @@ class People {
     }
 }
 
-class Tag {
+class Tag extends Me2day {
     constructor(id) {
+        super();
         this.id = id;
         this.content;
         this.postIdList = [];
     }
+
 }
 
-class Comment {
+class Comment extends Me2day {
     constructor(id) {
+        super();
         this.id = id;
         this.writerId;
         this.timestamp;
@@ -32,8 +50,9 @@ class Comment {
     }
 }
 
-class Post {
+class Post extends Me2day {
     constructor(id) {
+        super();
         this.id = id;
         this.writerId;
         this.resourcePath;
@@ -52,23 +71,36 @@ class Parser extends AsyncFsRunnable {
         super();
         this.sequencer = new Sequencer();
         this.repository = new Repository();
+        this.repository.onLoad.Post = Post.fromJSON
+        this.repository.onLoad.Tag = Tag.fromJSON
+        this.repository.onLoad.Comment = Comment.fromJSON
+        this.repository.onLoad.People = People.fromJSON
     }
 
-    init(){
-        return this.run(function *(){
+    init() {
+        return this.run(function *() {
             yield [this.sequencer.load(), this.repository.load('Post', 'People', 'Tag', 'Comment')];
         });
     }
 
+    getAllTargets() {
+        return {
+            Post: this.repository.data.Post,
+            People: this.repository.data.People,
+            Tag: this.repository.data.Tag,
+            Comment: this.repository.data.Comment
+        };
+    }
+
     done() {
-        return this.run(function *(){
-            yield [this.sequencer.save(), this.repository.save('People', 'Tag', 'Post', 'Comment')];
-            // yield this.repository.loadPartial('Comment');
-            // yield this.repository.save('Comment');
+        return this.run(function *() {
+            yield [this.sequencer.save(), this.repository.save('Post', 'People', 'Tag', 'Comment')];
+            return this.getAllTargets();
         });
     }
 
-    execute($, resourcePath, callback = (post)=>{}) {
+    execute($, resourcePath, callback = (post) => {
+    }) {
         return this.run(function *() {
             let post = yield this.repository.getOne('Post', (target) => {
                 return target.resourcePath === resourcePath;
@@ -96,9 +128,6 @@ class Parser extends AsyncFsRunnable {
             yield this.updateRepository({People: writerList});
 
             yield this.updateRepository({Post: post});
-
-            //yield this.repository.savePartial('Comment');
-            //this.repository.clean('Comment');
             return post;
         }, callback);
     }
@@ -111,7 +140,7 @@ class Parser extends AsyncFsRunnable {
             post.content = this.toContent($('p.post_body').html());
             post.rawContent = $('<p>' + this.toRawContent($('p.post_body').html()) + '</p>').text();
             post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
-            $('a.per_img.photo').each((idx, anchor)=> {
+            $('a.per_img.photo').each((idx, anchor) => {
                 let $anchor = $(anchor), $image = $anchor.find('img');
                 post.imageList.push({
                     thumbnail: path.join(resourcePath, '..', $image.attr('src')),
@@ -141,7 +170,7 @@ class Parser extends AsyncFsRunnable {
     getMetooPeopleList($) {
         return this.run(function *() {
             let metooList = [], $metooPeopleImageList = $('a.pi_s.profile_popup.no_link img');
-            $metooPeopleImageList.each((idx, image)=> {
+            $metooPeopleImageList.each((idx, image) => {
                 let $image = $(image);
                 metooList.push(Promise.resolve(this.getPeople($image)));
             });
@@ -175,7 +204,7 @@ class Parser extends AsyncFsRunnable {
                 tagPromiseList.push(this.getTag(tagText));
             }
             let tagList = yield tagPromiseList;
-            return tagList.filter((tag)=> {
+            return tagList.filter((tag) => {
                 return typeof tag !== 'undefined';
             });
         });
@@ -196,7 +225,7 @@ class Parser extends AsyncFsRunnable {
     getCommentList($) {
         return this.run(function *() {
             let commentPromiseList = [], $commentItemList = $('div.comment_item');
-            $commentItemList.each((idx, commentItem)=> {
+            $commentItemList.each((idx, commentItem) => {
                 commentPromiseList.push(this.getComment($(commentItem)));
             });
             let commandWriterList = yield commentPromiseList,

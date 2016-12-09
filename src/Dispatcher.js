@@ -13,6 +13,10 @@ class Dispatcher extends AsyncFsRunnable {
         this.parser = new Parser();
     }
 
+    /**
+     * me2dayObject = {Post:Object, Tag:Object, People:Object, Comment:Object}
+     * @param callback : function (me2dayObjects)
+     */
     execute(callback) {
         this.run(function *() {
             let exists = yield this.isExist(this.resourcePath);
@@ -28,18 +32,17 @@ class Dispatcher extends AsyncFsRunnable {
                 //files.splice(2, Number.MAX_VALUE);
 
                 yield this.parser.init();
-
                 let fileIterator = files[Symbol.iterator]();
                 let parseEachFile = () => {
                     return this.run(function *(){
                         let item = fileIterator.next();
                         if (item.done) {
-                            yield this.parser.done();
-                            return;
+                            return this.parser.done();
                         }
                         yield this.parseFile(path.join(this.resourcePath, item.value)).then(()=> {
                             return parseEachFile();
                         });
+                        return this.parser.getAllTargets();
                     });
                 };
                 this.enableProgressBar(files.length);

@@ -5,6 +5,7 @@
 \- [wiki](https://en.wikipedia.org/wiki/Me2day)
 
 ## How to parse your backup files
+### If you only want to parse,
 ```sh
 git clone https://github.com/loveqoo/me2day-backup-parser
 cd me2day-backup-parser
@@ -22,6 +23,22 @@ total 50344
 -rw-r--r--  1 anthony  staff   6.2M 12  9 00:44 Post.json
 -rw-r--r--  1 anthony  staff   1.4M 12  9 00:44 Tag.json
 -rw-r--r--  1 anthony  staff    43B 12  9 00:44 sequencer.json
+```
+### When you want to use the parse results directly,
+```sh
+node
+> const parser = require('./index');
+> parser.parse('${your-backup-dir}', 
+    (result)=>{ 
+        this.Post = result.Post; 
+        this.People = result.People; 
+        this.Tag = result.tag; 
+        this.Comment = result.Comment
+});
+> console.log(`Post count: ${Object.keys(Post).length}`);
+> console.log(`People count: ${Object.keys(People).length}`);
+> console.log(`Tag count: ${Object.keys(Tag).length}`);
+> console.log(`Comment count: ${Object.keys(Comment).length}`);
 ```
 ## License
 MIT

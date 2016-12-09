@@ -11,6 +11,7 @@ class Repository extends AsyncFsRunnable {
         this.pwd = process.env.PWD;
         this.defaultFolderName = '.repo';
         this.directoryPath = path.join(this.pwd, this.defaultFolderName);
+        this.onLoad = {};
     }
 
     load(keys) {
@@ -31,7 +32,7 @@ class Repository extends AsyncFsRunnable {
                 if (!exists) {
                     continue;
                 }
-                this.data[key] = JSON.parse(yield this.readFile(filePath));
+                this.data[key] = (this.onLoad[key] || JSON.parse)(yield this.readFile(filePath));
             }
         });
     }
@@ -59,7 +60,7 @@ class Repository extends AsyncFsRunnable {
                     if (!partialExists || !partialStats.isDirectory()) {
                         continue;
                     }
-                    let files = yield this.getFileList(partialDirectoryPath, (file)=> {
+                    let files = yield this.getFileList(partialDirectoryPath, (file) => {
                         return path.extname(file) === '.json';
                     });
                     if (!files || files.length === 0) {
@@ -94,11 +95,11 @@ class Repository extends AsyncFsRunnable {
         return this.run(function *() {
             let directoryCache = {};
             let targetKeys = keys && keys.length > 0 ? keys : Object.keys(this.data);
-            let getPartialPath = (id)=>{
+            let getPartialPath = (id) => {
                 if (parseInt(id, 10)) {
-                    return `partial-${Math.floor(parseInt(id,10) / 1000)}`;
+                    return `partial-${Math.floor(parseInt(id, 10) / 1000)}`;
                 } else {
-                    return `partial-${id.substring(0,1)}`;
+                    return `partial-${id.substring(0, 1)}`;
                 }
             };
             for (let key of targetKeys) {
@@ -124,7 +125,7 @@ class Repository extends AsyncFsRunnable {
 
     get(key, id, f = (o) => o) {
         !(key && id) && this.throwError();
-        return new Promise((fulfill)=> {
+        return new Promise((fulfill) => {
             if (!this.data[key]) {
                 this.data[key] = {};
             }
@@ -135,7 +136,7 @@ class Repository extends AsyncFsRunnable {
 
     list(key, filter, f = (o) => o) {
         !(key && this.isFunction(filter)) && this.throwError();
-        return new Promise((fulfill)=> {
+        return new Promise((fulfill) => {
             let keyData = this.data[key];
             let result = [];
             if (!keyData) {
@@ -163,7 +164,7 @@ class Repository extends AsyncFsRunnable {
 
     set(key, id, obj, f = (o) => o) {
         !(key && id && obj) && this.throwError();
-        return new Promise((fulfill)=> {
+        return new Promise((fulfill) => {
             if (!this.data[key]) {
                 this.data[key] = {};
             }
@@ -172,7 +173,7 @@ class Repository extends AsyncFsRunnable {
         });
     }
 
-    clean(...keys){
+    clean(...keys) {
         let targetKeys = keys && keys.length > 0 ? keys : Object.keys(this.data);
         for (let key of targetKeys) {
             this.data[key] = undefined;
