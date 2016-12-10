@@ -58,7 +58,7 @@ class Repository extends AsyncFsRunnable {
                         return originFilter('People', f);
                     },
                     list(...ids){
-                        return originList('People', ids);
+                        return originList('People', ...ids);
                     }
                 },
                 Post: {
@@ -74,7 +74,7 @@ class Repository extends AsyncFsRunnable {
                         });
                     },
                     list(...ids){
-                        return originList('Post', ids);
+                        return originList('Post', ...ids);
                     },
                     findByDate(datetime) {  // 2016-12-01
                         let from = moment(datetime).valueOf(),
@@ -98,7 +98,7 @@ class Repository extends AsyncFsRunnable {
                         return originFilter('Tag', f);
                     },
                     list(...ids){
-                        return originList('Tag', ids);
+                        return originList('Tag', ...ids);
                     }
                 },
                 Comment: {
@@ -115,7 +115,7 @@ class Repository extends AsyncFsRunnable {
                         return writers.length === 1 ? writers[0].getCommentList() : undefined;
                     },
                     list(...ids){
-                        return originList('Comment', ids);
+                        return originList('Comment', ...ids);
                     },
                     findByDate(datetime) {  // 2016-12-01
                         let from = moment(datetime).valueOf(),

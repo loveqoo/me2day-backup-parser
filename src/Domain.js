@@ -36,6 +36,7 @@ class People extends Me2day {
     constructor(id) {
         super();
         this.id = id;
+        this.nickname;
         this.profileImagePath;
         this.postIdList = [];
         this.commentIdList = [];
@@ -100,7 +101,7 @@ class Comment extends Me2day {
     }
 
     toString() {
-        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.content}`;
+        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.rawContent}`;
     }
 }
 

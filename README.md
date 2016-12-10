@@ -138,12 +138,20 @@ node
 #### 데이터 조회
 ```sh
 > const postDao = repository.getDao('Post');
+> postDao
+{ findById: [Function: findById],
+  filter: [Function: filter],
+  findByTag: [Function: findByTag],
+  list: [Function: list],
+  findByDate: [Function: findByDate] }
+> let post0 = postDao.findByDate('2009-08-21');
 ```
 
 ### People
 
 #### 프로퍼티
 - id
+- nickname
 - profileImagePath
 - postIdList
 - commentIdList
@@ -157,6 +165,12 @@ node
 #### 데이터 조회
 ```sh
 > const peopleDao = repository.getDao('People');
+> peopleDao
+{ findById: [Function: findById],
+  filter: [Function: filter],
+  list: [Function: list] }
+> peopleDao.list('garangnip','dasti').map(people=>people.nickname);
+[ '꾸우', 'dasti' ] 
 ```
 
 ### Tag
@@ -172,6 +186,18 @@ node
 #### 데이터 조회
 ```sh
 > const tagDao = repository.getDao('Tag');
+> tagDao
+{ findById: [Function: findById],
+  findByTag: [Function: findByTag],
+  filter: [Function: filter],
+  list: [Function: list] }
+> let tag0 = tagDao.findByTag('식미투')[0];
+> tag0.getPostList().map(post=>post.title);
+[ ' 서비스 엉망인 홍대 벌집삼겹살 ',
+  ' 투썸플레이스 팥빙수로 마무리. ',
+  ' 점심겸 저녁으로 먹는 청국장 ',
+  ' 토마토가 들어간 크림스파게티 ',
+  ... 322 more items ]
 ```
 ### Comment
 
@@ -190,6 +216,9 @@ node
 #### 데이터 조회
 ```sh
 > const commentDao = repository.getDao('Comment');
+> let [comment0, comment1] = commentDao.list(48,50);
+> comment1.toConsole();
+2009-08-21 01:45:00 꾸우  tabby 뒤끝쟁이 어뜨케… 싸울 때마다 히스토리 줄줄 나오는 거? -_ㅠ
 ```
 ## License
 MIT
