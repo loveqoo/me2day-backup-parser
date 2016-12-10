@@ -48,10 +48,15 @@ node
         this.Tag = result.tag; 
         this.Comment = result.Comment
 });
+  Parsing [==============================] 100% 0.0s p.zsio.iOI.html  베스킨라빈스 왔어요. 후훗 살찌는 소리
 > console.log(`Post count: ${Object.keys(Post).length}`);
+Post count: 8973
 > console.log(`People count: ${Object.keys(People).length}`);
+People count: 2563
 > console.log(`Tag count: ${Object.keys(Tag).length}`);
+Tag count: 19401
 > console.log(`Comment count: ${Object.keys(Comment).length}`);
+Comment count: 88512
 > console.log(Post[Object.keys(Post)[0]].toString());
 Post ID: 1
 Content:  내 방에만 불켜고 문 열어 놓고 웃통 벗고 모기를 유인하고 있음. 
