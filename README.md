@@ -1,11 +1,11 @@
 # Me2day Backup File Parser
 
-## What is the Me2day?
+## 미투데이란?
 > Me2day (Hangul: 미투데이) was a microblogging and social networking service in South Korea acquired and owned by NHN Corporation (present-day Naver Corporation)
 \- [wiki](https://en.wikipedia.org/wiki/Me2day)
 
-## How to parse your backup files
-### If you only want to parse,
+## 백업 파일을 파싱하는 방법
+### 1. 묻고 따지지 않고 바로 파싱하기.
 ```sh
 git clone https://github.com/loveqoo/me2day-backup-parser
 cd me2day-backup-parser
@@ -14,17 +14,18 @@ node backup-parser.js ${your-backup-dir}
 ```
 `${your-backup-dir} maybe ${backup-root}/me2day/yourId/post`
 
-When the parse works is finished, a `.repo` folder is created.
-And you can see the list of files as below.
+파싱 작업이 완료되면, `.repo` 폴더가 생성됩니다.
+그리고 그 안에 들어가면 아래처럼 5개의 파일을 볼 수가 있습니다.
 ```bash
 total 50344
--rw-r--r--  1 anthony  staff    16M 12  9 00:44 Comment.json
--rw-r--r--  1 anthony  staff   1.2M 12  9 00:44 People.json
--rw-r--r--  1 anthony  staff   6.2M 12  9 00:44 Post.json
--rw-r--r--  1 anthony  staff   1.4M 12  9 00:44 Tag.json
--rw-r--r--  1 anthony  staff    43B 12  9 00:44 sequencer.json
+-rw-r--r--  1 aaa  staff    16M 12  9 00:44 Comment.json
+-rw-r--r--  1 aaa  staff   1.2M 12  9 00:44 People.json
+-rw-r--r--  1 aaa  staff   6.2M 12  9 00:44 Post.json
+-rw-r--r--  1 aaa  staff   1.4M 12  9 00:44 Tag.json
+-rw-r--r--  1 aaa  staff    43B 12  9 00:44 sequencer.json
 ```
-### When you want to use the parse results directly,
+### 2. 파싱한 뒤 콜백함수를 이용해서 곧바로 데이터를 보기
+#### 콜백함수에는 파싱한 결과를 파라미터로 받을 수 있습니다.
 ```sh
 node
 > const parser = require('./index');
@@ -41,7 +42,9 @@ node
 > console.log(`Comment count: ${Object.keys(Comment).length}`);
 > console.log(Post[Object.keys(Post)[0]].toString());
 ```
-### You can still access the data after parse.
+## 파싱 후에도 데이터를 접근해보기
+#### 아래처럼 파싱 결과를 로드하여 repository 객체에 접근할 수 있습니다.
+단, `.repo` 폴더에 파싱한 결과가 있어야 가능합니다.
 ```sh
 node
 > const parser = require('./index');
