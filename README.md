@@ -60,6 +60,11 @@ node
 node
 > const parser = require('./index');
 > let repository = parser.load(()=> { console.log('done');});
+> done
+Post : 8973
+People : 2563
+Tag : 19401
+Comment : 88512
 > let post = Post[Object.keys(repository.data.Post)[0]];
 > console.log(post.toString());
 Post ID: 1
