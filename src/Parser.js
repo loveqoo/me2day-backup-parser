@@ -57,7 +57,7 @@ class Parser extends AsyncFsRunnable {
             }
             post = yield this.getPost($, resourcePath);
 
-            let writer = yield this.getPeople($('img.profile_img'));
+            let writer = yield this.getPeople($('img.profile_img'), resourcePath);
             this.postAndPeople(post, writer);
             yield this.updateRepository({People: writer});
 
@@ -65,11 +65,11 @@ class Parser extends AsyncFsRunnable {
             this.postAndTags(post, tags);
             yield this.updateRepository({Tag: tags});
 
-            let metooPeopleList = yield this.getMetooPeopleList($);
+            let metooPeopleList = yield this.getMetooPeopleList($, resourcePath);
             this.postAndMetooPeopleList(post, metooPeopleList);
             yield this.updateRepository({People: metooPeopleList});
 
-            let [commentList, writerList] = yield this.getCommentList($);
+            let [commentList, writerList] = yield this.getCommentList($, resourcePath);
             this.postAndCommentList(post, commentList);
             yield this.updateRepository({Comment: commentList});
             yield this.updateRepository({People: writerList});
@@ -98,7 +98,7 @@ class Parser extends AsyncFsRunnable {
         });
     };
 
-    getPeople($image) {
+    getPeople($image, resourcePath) {
         return this.run(function *() {
             let imagePath = $image.attr('src');
             let peopleId = this.extractPeopleIdByImageUri(imagePath);
@@ -108,18 +108,18 @@ class Parser extends AsyncFsRunnable {
             }
             people = new People(peopleId);
             people.nickname = $image.attr('alt');
-            people.profileImagePath = imagePath;
+            people.profileImagePath = path.join(resourcePath, '..', imagePath);
             yield this.repository.set('People', people.id, people);
             return people;
         });
     };
 
-    getMetooPeopleList($) {
+    getMetooPeopleList($, resourcePath) {
         return this.run(function *() {
             let metooList = [], $metooPeopleImageList = $('a.pi_s.profile_popup.no_link img');
             $metooPeopleImageList.each((idx, image) => {
                 let $image = $(image);
-                metooList.push(Promise.resolve(this.getPeople($image)));
+                metooList.push(Promise.resolve(this.getPeople($image, resourcePath)));
             });
             return yield metooList;
         });
@@ -157,24 +157,24 @@ class Parser extends AsyncFsRunnable {
         });
     };
 
-    getComment($comment) {
+    getComment($comment, resourcePath) {
         return this.run(function *() {
             let comment = new Comment(yield this.sequencer.get('Comment'));
             comment.content = toMarkdown($comment.find('p.para').html());
             comment.rawContent = $comment.find('p.para').text();
             comment.timestamp = this.toTimestamp($comment.find('span.comment_time').text());
-            let writer = yield this.getPeople($comment.find('a.comment_profile.profile_popup.no_link img'));
+            let writer = yield this.getPeople($comment.find('a.comment_profile.profile_popup.no_link img'), resourcePath);
             this.commentAndPeople(comment, writer);
             yield this.repository.set('People', writer.id, writer);
             return [comment, writer];
         });
     };
 
-    getCommentList($) {
+    getCommentList($, resourcePath) {
         return this.run(function *() {
             let commentPromiseList = [], $commentItemList = $('div.comment_item');
             $commentItemList.each((idx, commentItem) => {
-                commentPromiseList.push(this.getComment($(commentItem)));
+                commentPromiseList.push(this.getComment($(commentItem), resourcePath));
             });
             let commandWriterList = yield commentPromiseList,
                 commentList = [], writerList = [];

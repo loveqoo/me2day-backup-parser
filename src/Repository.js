@@ -1,7 +1,5 @@
 'use strict';
 const EOL = require('os').EOL;
-const co = require('co');
-const fs = require('graceful-fs');
 const path = require('path');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
 

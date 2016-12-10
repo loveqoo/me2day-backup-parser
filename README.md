@@ -65,7 +65,7 @@ Post : 8973
 People : 2563
 Tag : 19401
 Comment : 88512
-> let post = Post[Object.keys(repository.data.Post)[0]];
+> let post = repository.data.Post[Object.keys(repository.data.Post)[0]];
 > console.log(post.toString());
 Post ID: 1
 Content:  내 방에만 불켜고 문 열어 놓고 웃통 벗고 모기를 유인하고 있음. 
