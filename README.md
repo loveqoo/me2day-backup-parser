@@ -12,7 +12,8 @@ cd me2day-backup-parser
 npm install
 node backup-parser.js ${your-backup-dir}
 ```
-`${your-backup-dir} maybe ${backup-root}/me2day/yourId/post`
+`${your-backup-dir}`은 아마도 다음과 같은 위치일 겁니다. 
+> ${backup-root}/me2day/yourId/post`
 
 파싱 작업이 완료되면, `.repo` 폴더가 생성됩니다.
 그리고 그 안에 들어가면 아래처럼 5개의 파일을 볼 수가 있습니다.
