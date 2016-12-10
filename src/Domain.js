@@ -22,6 +22,14 @@ class Me2day {
     toDateString(obj) {
         return obj ? moment(obj).format('YYYY-MM-DD HH:mm:ss') : '';
     }
+
+    toString() {
+        return `${this.constructor.name} : ${this.id}`;
+    }
+
+    toConsole() {
+        console && console.log && console.log(this.toString());
+    }
 }
 
 class People extends Me2day {
@@ -35,15 +43,19 @@ class People extends Me2day {
     }
 
     getPostList() {
-        return this.repository.direct().in('Post', this.postIdList);
+        return this.repository.direct.in('Post', this.postIdList);
     }
 
     getCommentList() {
-        return this.repository.direct().in('Comment', this.commentIdList);
+        return this.repository.direct.in('Comment', this.commentIdList);
     }
 
     getMetooPostList() {
-        return this.repository.direct().in('Post', this.metooPostIdList);
+        return this.repository.direct.in('Post', this.metooPostIdList);
+    }
+
+    toString() {
+        return `${this.id} -> post(${this.postIdList.length}), metoo(${this.metooPostIdList.length}), comment(${this.commentIdList.length})`;
     }
 }
 
@@ -56,9 +68,12 @@ class Tag extends Me2day {
     }
 
     getPostList() {
-        return this.repository.direct().in('Post', this.postIdList);
+        return this.repository.direct.in('Post', this.postIdList);
     }
 
+    toString(){
+        return `${this.content}(${this.id}) -> post(${this.postIdList.length})`;
+    }
 }
 
 class Comment extends Me2day {
@@ -72,16 +87,20 @@ class Comment extends Me2day {
         this.rawContent;
     }
 
+    getDatetime(){
+        return this.toDateString(this.timestamp);
+    }
+
     getWriter() {
-        return this.repository.direct().one('People', this.writerId);
+        return this.repository.direct.one('People', this.writerId);
     }
 
     getPost() {
-        return this.repository.direct().one('Post', this.postId);
+        return this.repository.direct.one('Post', this.postId);
     }
 
     toString() {
-        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.rawContent}`;
+        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.content}`;
     }
 }
 
@@ -101,20 +120,24 @@ class Post extends Me2day {
         this.imageList = [];
     }
 
+    getDatetime(){
+        return this.toDateString(this.timestamp);
+    }
+
     getWriter() {
-        return this.repository.direct().one('People', this.writerId);
+        return this.repository.direct.one('People', this.writerId);
     }
 
     getMetooPeopleList() {
-        return this.repository.direct().in('People', this.metooPeopleIdList);
+        return this.repository.direct.in('People', this.metooPeopleIdList);
     }
 
     getTagList() {
-        return this.repository.direct().in('Tag', this.tagIdList);
+        return this.repository.direct.in('Tag', this.tagIdList);
     }
 
     getCommentList() {
-        return this.repository.direct().in('Comment', this.commentIdList);
+        return this.repository.direct.in('Comment', this.commentIdList);
     }
 
     toString() {

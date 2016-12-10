@@ -157,11 +157,12 @@ class Parser extends AsyncFsRunnable {
         });
     };
 
-    getComment($comment, resourcePath) {
+    getComment($, $comment, resourcePath) {
         return this.run(function *() {
+            let $content = $comment.find('p.para');
             let comment = new Comment(yield this.sequencer.get('Comment'));
-            comment.content = toMarkdown($comment.find('p.para').html());
-            comment.rawContent = $comment.find('p.para').text();
+            comment.content = toMarkdown($content.html());
+            comment.rawContent = $('<p>' + $content.html() + '</p>').text();
             comment.timestamp = this.toTimestamp($comment.find('span.comment_time').text());
             let writer = yield this.getPeople($comment.find('a.comment_profile.profile_popup.no_link img'), resourcePath);
             this.commentAndPeople(comment, writer);
@@ -174,7 +175,7 @@ class Parser extends AsyncFsRunnable {
         return this.run(function *() {
             let commentPromiseList = [], $commentItemList = $('div.comment_item');
             $commentItemList.each((idx, commentItem) => {
-                commentPromiseList.push(this.getComment($(commentItem), resourcePath));
+                commentPromiseList.push(this.getComment($, $(commentItem), resourcePath));
             });
             let commandWriterList = yield commentPromiseList,
                 commentList = [], writerList = [];

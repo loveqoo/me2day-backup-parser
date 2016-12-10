@@ -1,6 +1,7 @@
 'use strict';
 const EOL = require('os').EOL;
 const path = require('path');
+const moment = require('moment');
 const AsyncFsRunnable = require('./AsyncFsRunnable');
 
 class Repository extends AsyncFsRunnable {
@@ -11,6 +12,122 @@ class Repository extends AsyncFsRunnable {
         this.defaultFolderName = '.repo';
         this.directoryPath = path.join(this.pwd, this.defaultFolderName);
         this.onLoad = {};
+        this.direct = {};
+        this.direct.in = (key, idList) => {
+            !(key && idList) && this.throwError();
+            if (!this.data[key]) {
+                return [];
+            }
+            let result = [];
+            for (let id of idList) {
+                result.push(this.data[key][id]);
+            }
+            return result;
+        };
+        this.direct.one = (key, id) => {
+            !(key && id) && this.throwError();
+            if (!this.data[key]) {
+                return;
+            }
+            return this.data[key][id];
+        }
+    }
+
+    getDao(key) {
+        let originData = this.data,
+            originFilter = (key, f) => {
+                let result = [];
+                for (let id of Object.keys(this.data[key])) {
+                    f && f(this.data[key][id]) && result.push(this.data[key][id]);
+                }
+                return result;
+            },
+            originList = (key, ...ids) => {
+                let result = [];
+                for (let id of ids) {
+                    result.push(this.data[key][id]);
+                }
+                return result;
+            },
+            dao = {
+                People: {
+                    findById(id){
+                        return originData['People'][id];
+                    },
+                    filter(f) {
+                        return originFilter('People', f);
+                    },
+                    list(...ids){
+                        return originList('People', ids);
+                    }
+                },
+                Post: {
+                    findById(id){
+                        return originData['Post'][id];
+                    },
+                    filter(f) {
+                        return originFilter('Post', f);
+                    },
+                    findByTag(tagName) {
+                        return originFilter('Tag', (tag) => {
+                            return tag.content === tagName;
+                        });
+                    },
+                    list(...ids){
+                        return originList('Post', ids);
+                    },
+                    findByDate(datetime) {  // 2016-12-01
+                        let from = moment(datetime).valueOf(),
+                            to = moment(datetime).add(1, 'day').valueOf();
+                        return originFilter('Post', (post)=>{
+                            let postTime = new Date(post.timestamp).getTime();
+                            return postTime >= from && postTime < to;
+                        });
+                    }
+                },
+                Tag: {
+                    findById(id){
+                        return originData['Tag'][id];
+                    },
+                    findByTag(tagName){
+                        return originFilter('Tag', (tag) => {
+                            return tag.content === tagName;
+                        });
+                    },
+                    filter(f) {
+                        return originFilter('Tag', f);
+                    },
+                    list(...ids){
+                        return originList('Tag', ids);
+                    }
+                },
+                Comment: {
+                    findById(id){
+                        return originData['Comment'][id];
+                    },
+                    filter(f) {
+                        return originFilter('Comment', f);
+                    },
+                    findByWriterId(writerId){
+                        let writers =  originFilter('People', (people) => {
+                            return people.id === writerId;
+                        });
+                        return writers.length === 1 ? writers[0].getCommentList() : undefined;
+                    },
+                    list(...ids){
+                        return originList('Comment', ids);
+                    },
+                    findByDate(datetime) {  // 2016-12-01
+                        let from = moment(datetime).valueOf(),
+                            to = moment(datetime).add(1, 'day').valueOf();
+                        return originFilter('Comment', (comment)=>{
+                            let postTime = new Date(comment.timestamp).getTime();
+                            return postTime >= from && postTime < to;
+                        });
+                    }
+                }
+            };
+        return dao[key];
     }
 
     load(...keys) {
@@ -131,30 +248,6 @@ class Repository extends AsyncFsRunnable {
             let result = this.data[key][id];
             fulfill(result ? f(result) : undefined);
         });
-    }
-
-    direct() {
-        const that = this;
-        return {
-            in(key, idList){
-                !(key && idList) && this.throwError();
-                if (!that.data[key]) {
-                    return [];
-                }
-                let result = [];
-                for (let id of idList) {
-                    result.push(that.data[key][id]);
-                }
-                return result;
-            },
-            one(key, id){
-                !(key && id) && this.throwError();
-                if (!that.data[key]) {
-                    return;
-                }
-                return that.data[key][id];
-            }
-        };
     }
 
     list(key, filter, f = (o) => o) {

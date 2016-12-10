@@ -108,13 +108,88 @@ Comment:
 
 ```
 ## 파싱한 데이터 접근
+모든 접근은 nodejs `REPL` 에서 데이터를 모두 로딩한 후에 접근하는 것으로 설명합니다. 
+```sh
+node
+> const parser = require('./index');
+> let repository = parser.load(()=> { console.log('done');});
+```
 ### Post
-추후 업데이트
+#### 프로퍼티
+- id
+- writerId
+- resourcePath
+- metooPeopleIdList
+- timestamp
+- title
+- content
+- rawContent
+- tagIdList
+- commentIdList
+- imageList
+
+#### 메소드
+- getDatetime()
+- getWriter()
+- getMetooPeopleList()
+- getTagList()
+- getCommentList()
+
+#### 데이터 조회
+```sh
+> const postDao = repository.getDao('Post');
+```
+
 ### People
-추후 업데이트
+
+#### 프로퍼티
+- id
+- profileImagePath
+- postIdList
+- commentIdList
+- metooPostIdList
+
+#### 메소드
+- getPostList()
+- getCommentList()
+- getMetooPostList()
+
+#### 데이터 조회
+```sh
+> const peopleDao = repository.getDao('People');
+```
+
 ### Tag
-추후 업데이트
+
+#### 프로퍼티
+- id
+- content
+- postIdList
+
+#### 메소드
+- getPostList()
+
+#### 데이터 조회
+```sh
+> const tagDao = repository.getDao('Tag');
+```
 ### Comment
-추후 업데이트
+
+#### 프로퍼티
+- id
+- writerId
+- timestamp
+- content
+- rawContent
+
+#### 메소드
+- getDatetime()
+- getWriter()
+- getPost()
+
+#### 데이터 조회
+```sh
+> const commentDao = repository.getDao('Comment');
+```
 ## License
 MIT
