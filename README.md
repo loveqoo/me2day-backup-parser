@@ -226,5 +226,12 @@ node
 > comment1.toConsole();
 2009-08-21 01:45:00 꾸우  tabby 뒤끝쟁이 어뜨케… 싸울 때마다 히스토리 줄줄 나오는 거? -_ㅠ
 ```
+
+### 공통
+
+#### 메소드
+- toConsole
+- toString
+
 ## License
 MIT
