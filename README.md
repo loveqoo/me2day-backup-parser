@@ -4,6 +4,11 @@
 > Me2day (Hangul: 미투데이) was a microblogging and social networking service in South Korea acquired and owned by NHN Corporation (present-day Naver Corporation)
 \- [wiki](https://en.wikipedia.org/wiki/Me2day)
 
+## 파싱을 하는 목적
+백업 파일을 묵혀두기엔 너무 아깝고, 다른 블로그로 이전할 때 백업한 데이터를 사용하기 위해 필요성을 느꼈다.
+
+기존 `html`형식의 백업파일은 바로 보기에는 좋지만, 데이터를 뽑아내기 어려워 가공할 수 없었다. 따라서 JSON 형식으로 데이터를 저장한다.
+
 ## 백업 파일을 파싱하는 방법
 ### 1. 묻고 따지지 않고 바로 파싱하기.
 ```sh
