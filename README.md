@@ -1,7 +1,7 @@
 # Me2day Backup File Parser
 
 ## 미투데이란?
-> Me2day (Hangul: 미투데이) was a microblogging and social networking service in South Korea acquired and owned by NHN Corporation (present-day Naver Corporation)
+> 미투데이(me2day)는 대한민국의 마이크로블로그 서비스였다. 2014년 6월 30일 서비스가 종료되었다.
 \- [wiki](https://en.wikipedia.org/wiki/Me2day)
 
 ## 파싱을 하는 목적
@@ -10,6 +10,9 @@
 기존 `html`형식의 백업파일은 바로 보기에는 좋지만, 데이터를 뽑아내기 어려워 가공할 수 없었습니다. 
 
 따라서 JSON 형식으로 데이터를 저장합니다.
+
+## 파싱을 하기 전에
+본 프로그램은 [nodejs](https://nodejs.org/ko/) 기반으로 작성되어 있습니다.
 
 ## 백업 파일을 파싱하는 방법
 ### 1. 묻고 따지지 않고 바로 파싱하기.
