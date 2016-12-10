@@ -21,6 +21,7 @@ git clone https://github.com/loveqoo/me2day-backup-parser
 cd me2day-backup-parser
 npm install
 node backup-parser.js ${your-backup-dir}
+Parsing [======                        ] 20% 151.5s p.EKwP4.iOI.html  점 제거 시술 후 거의 다 아물었고 흉터없다. 큰
 ```
 `${your-backup-dir}`은 아마도 다음과 같은 위치일 겁니다. 
 > ${backup-root}/me2day/yourId/post
