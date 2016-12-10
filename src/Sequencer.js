@@ -9,7 +9,7 @@ class Sequencer extends AsyncFsRunnable {
         this.pwd = process.env.PWD;
         this.defaultFolderName = '.repo';
         this.defaultDirPath = path.join(this.pwd, this.defaultFolderName);
-        this.defaultFilePath = path.join(this.defaultDirPath, 'sequencer.json');
+        this.defaultFilePath = path.join(this.defaultDirPath, 'sequence.json');
     }
 
     get(key) {

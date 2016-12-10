@@ -33,7 +33,7 @@ total 50344
 -rw-r--r--  1 aaa  staff   1.2M 12  9 00:44 People.json
 -rw-r--r--  1 aaa  staff   6.2M 12  9 00:44 Post.json
 -rw-r--r--  1 aaa  staff   1.4M 12  9 00:44 Tag.json
--rw-r--r--  1 aaa  staff    43B 12  9 00:44 sequencer.json
+-rw-r--r--  1 aaa  staff    43B 12  9 00:44 sequence.json
 ```
 ### 2. 파싱한 뒤 콜백함수를 이용해서 곧바로 데이터를 보기
 #### 콜백함수에는 파싱한 결과를 파라미터로 받을 수 있습니다.
