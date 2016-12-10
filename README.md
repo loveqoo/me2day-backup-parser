@@ -23,7 +23,7 @@ npm install
 node backup-parser.js ${your-backup-dir}
 ```
 `${your-backup-dir}`은 아마도 다음과 같은 위치일 겁니다. 
-> ${backup-root}/me2day/yourId/post`
+> ${backup-root}/me2day/yourId/post
 
 파싱 작업이 완료되면, 실행한 위치에 `.repo` 폴더가 생성됩니다.
 그리고 그 안에 들어가면 아래처럼 5개의 파싱된 파일을 볼 수가 있습니다.
