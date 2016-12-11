@@ -98,6 +98,13 @@ class Parser extends AsyncFsRunnable {
                 post.location = {};
                 post.location.name = $map.find('span.map_location_alt').text();
                 post.location.link = $map.find('a').attr('href');
+                post.location.image = path.join(resourcePath, '..', $map.find('img').attr('src'));
+            }
+            let $embed = $('div.embed_me2photo');
+            if ($embed.length === 1) {
+                post.video = {};
+                post.video.src = path.join(resourcePath, '..', '..', '..', $embed.find('a').attr('href'));
+                post.video.thumbnail = path.join(resourcePath, '..', '..', '..', $embed.find('img').attr('src'));
             }
             return post;
         });

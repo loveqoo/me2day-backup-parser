@@ -120,6 +120,7 @@ class Post extends Me2day {
         this.commentIdList = [];
         this.imageList = [];
         this.location;
+        this.video;
     }
 
     getDatetime(){
