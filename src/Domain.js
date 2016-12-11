@@ -119,6 +119,7 @@ class Post extends Me2day {
         this.tagIdList = [];
         this.commentIdList = [];
         this.imageList = [];
+        this.location;
     }
 
     getDatetime(){

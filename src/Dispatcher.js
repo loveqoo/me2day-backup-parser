@@ -50,7 +50,7 @@ class Dispatcher extends AsyncFsRunnable {
             } else if (stats.isFile()) {
                 yield this.parser.init();
                 yield this.parseFile(this.resourcePath);
-                yield this.parser.done();
+                return yield this.parser.done();
             } else {
                 this.throwError(`${this.resourcePath} is NOT directory or file.`);
             }

@@ -46,8 +46,7 @@ class Parser extends AsyncFsRunnable {
         });
     }
 
-    execute($, resourcePath, callback = (post) => {
-    }) {
+    execute($, resourcePath, callback = (post) => {}) {
         return this.run(function *() {
             let post = yield this.repository.getOne('Post', (target) => {
                 return target.resourcePath === resourcePath;
@@ -94,6 +93,12 @@ class Parser extends AsyncFsRunnable {
                     original: path.join(resourcePath, '..', $anchor.attr('href'))
                 });
             });
+            let $map = $('div.map_container');
+            if ($map.length === 1) {
+                post.location = {};
+                post.location.name = $map.find('span.map_location_alt').text();
+                post.location.link = $map.find('a').attr('href');
+            }
             return post;
         });
     };

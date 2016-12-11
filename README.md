@@ -127,6 +127,7 @@ node
 - tagIdList
 - commentIdList
 - imageList
+- location
 
 #### 메소드
 - getDatetime()
