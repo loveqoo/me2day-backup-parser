@@ -127,7 +127,15 @@ node
 - tagIdList
 - commentIdList
 - imageList
+    - thumbnail
+    - original
 - location
+    - name
+    - link
+    - image
+- video
+    - src
+    - thumbnail
 
 #### 메소드
 - getDatetime()
