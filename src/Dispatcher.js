@@ -1,6 +1,5 @@
 'use strict';
 const path = require('path');
-//const series = require('co-series');
 const cheerio = require('cheerio');
 const AsyncFsRunnable = require('./defines/AsyncFsRunnable');
 const ResourceFactory = require('./ResourceFactory');
