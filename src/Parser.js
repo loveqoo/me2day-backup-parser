@@ -3,8 +3,8 @@ const path = require('path');
 const toMarkdown = require('to-markdown');
 const Repository = require('./Repository');
 const Sequencer = require('./Sequencer');
-const AsyncFsRunnable = require('./AsyncFsRunnable');
-const Domain = require('./Domain');
+const AsyncFsRunnable = require('./defines/AsyncFsRunnable');
+const Domain = require('./defines/Domain');
 
 const Me2day = Domain.Me2day;
 const People = Domain.People;

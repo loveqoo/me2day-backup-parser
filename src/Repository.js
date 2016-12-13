@@ -2,7 +2,7 @@
 const EOL = require('os').EOL;
 const path = require('path');
 const moment = require('moment');
-const AsyncFsRunnable = require('./AsyncFsRunnable');
+const AsyncFsRunnable = require('./defines/AsyncFsRunnable');
 
 class Repository extends AsyncFsRunnable {
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('path');
-const AsyncFsRunnable = require('./AsyncFsRunnable');
+const AsyncFsRunnable = require('./defines/AsyncFsRunnable');
 
 class Sequencer extends AsyncFsRunnable {
     constructor() {

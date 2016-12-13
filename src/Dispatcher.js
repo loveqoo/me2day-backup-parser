@@ -1,91 +1,105 @@
-"use strict";
+'use strict';
 const path = require('path');
+//const series = require('co-series');
 const cheerio = require('cheerio');
-const ProgressBar = require('progress');
-const AsyncFsRunnable = require('./AsyncFsRunnable');
-const Parser = require('./Parser');
+const AsyncFsRunnable = require('./defines/AsyncFsRunnable');
+const ResourceFactory = require('./ResourceFactory');
 
 class Dispatcher extends AsyncFsRunnable {
     constructor(resourcePath) {
         super();
         this.resourcePath = resourcePath;
-        this.progressBar = undefined;
-        this.parser = new Parser();
+        this.factory = new ResourceFactory();
     }
 
-    /**
-     * me2dayObject = {Post:Object, Tag:Object, People:Object, Comment:Object}
-     * @param callback : function (me2dayObjects)
-     */
+    debug() {
+        super.debug();
+        for (let key of Object.keys(this)) {
+            if (this[key] instanceof AsyncFsRunnable) {
+                this[key].debugMode = this.debugMode;
+            }
+        }
+    }
+
     execute(callback) {
         this.run(function *() {
-            let exists = yield this.isExist(this.resourcePath);
-            if (!exists) {
-                this.throwError(`${this.resourcePath} is NOT exists.`);
-            }
-            let stats = yield this.getStats(this.resourcePath);
-            if (stats.isDirectory()) {
-                let files = yield this.getFileList(this.resourcePath, (file)=> {
-                    return path.extname(file) === '.html';
-                });
+            let report = {};
+            const sequencer = this.factory.sequencer, repository = this.factory.repository;
 
-                //files.splice(2, Number.MAX_VALUE);
+            yield [sequencer.load(), repository.load('Post', 'People', 'Tag', 'Comment')];
 
-                yield this.parser.init();
+            console.log(`  [INFO] Search files.`);
+
+            yield this.factory.fileExplorer.explore(this.resourcePath, report);
+
+            const progressBar = this.factory.newProgressBar('  Parsing [:bar] :percent :etas :file :content', report.total);
+
+            console.log(`  [INFO] ${report.total} files Found.`);
+
+            let passed = 0, parsed = 0;
+
+            for (let directoryPath of Object.keys(report.dir)) {
+                let targetParser;
+                for (let parser of this.factory.parserList) {
+                    if (parser.isMine(directoryPath)) {
+                        targetParser = parser;
+                        break;
+                    }
+                }
+                if (!targetParser) {
+                    this.log(`Not Found Parser : ${directoryPath}`);
+                    progressBar.tick(report.dir[directoryPath], {
+                        'file': directoryPath,
+                        'content': 'Not Found Parser'
+                    });
+                    passed += report.dir[directoryPath];
+                    continue;
+                }
+
+                let files = yield this.getFileList(directoryPath, file => path.extname(file) === '.html');
                 let fileIterator = files[Symbol.iterator]();
                 let parseEachFile = () => {
-                    return this.run(function *(){
+                    return this.run(function *() {
                         let item = fileIterator.next();
                         if (item.done) {
-                            return this.parser.done();
+                            return;
                         }
-                        yield this.parseFile(path.join(this.resourcePath, item.value)).then(()=> {
+                        let resourcePath = path.join(directoryPath, item.value);
+                        yield this.run(function *() {
+                            let baseName = path.basename(resourcePath);
+                            let $ = yield this.factory.getCheerio(resourcePath);
+                            yield targetParser.parse(resourcePath, $).then((content) => {
+                                parsed += 1;
+                                progressBar.tick({
+                                    'file': baseName,
+                                    'content': content
+                                });
+                            });
+                        }).then(() => {
                             return parseEachFile();
                         });
-                        return this.parser.getAllTargets();
                     });
                 };
-                this.enableProgressBar(files.length);
-                return yield Promise.resolve(parseEachFile());
-            } else if (stats.isFile()) {
-                yield this.parser.init();
-                yield this.parseFile(this.resourcePath);
-                return yield this.parser.done();
-            } else {
-                this.throwError(`${this.resourcePath} is NOT directory or file.`);
+                yield Promise.resolve(parseEachFile());
             }
+            yield [sequencer.save(), repository.save('Post', 'People', 'Tag', 'Comment')];
+
+            console.log(`  [INFO] ${parsed} of ${report.total} files are parsed.`);
+            console.log(`  [INFO] ${passed} of ${report.total} files are passed.`);
+
+            const getLength = (target) =>{
+                return Object.keys(repository.data[target]).length;
+            };
+
+            console.log(`  [INFO] Post(${getLength('Post')}), People(${getLength('People')}), Comment(${getLength('Comment')}), Tag(${getLength('Tag')})`);
+
+            return {
+                Post: repository.data.Post,
+                People: repository.data.People,
+                Tag: repository.data.Tag,
+                Comment: repository.data.Comment
+            };
         }, callback);
-    }
-
-    parseFile(filePath) {
-        return this.run(function *() {
-            let data = yield this.readFile(filePath);
-            let $ = cheerio.load(data, {normalizeWhitespace: true});
-            let baseName = path.basename(filePath);
-            let post = yield this.parser.execute($, filePath, (post) => {
-                if (this.progressBar) {
-                    this.progressBar.tick({
-                        'file': baseName,
-                        'content': post.title
-                    });
-                } else {
-                    this.log(`[INFO] File: ${filePath}`);
-                    this.log(`[INFO] ${post.id} ${post.content} at ${post.timestamp}`);
-                }
-            });
-        });
-    }
-
-    enableProgressBar(fileLength) {
-        if (this.debugMode) {
-            return;
-        }
-        this.progressBar = new ProgressBar('  Parsing [:bar] :percent :etas :file :content', {
-            complete: '=',
-            incomplete: ' ',
-            width: 30,
-            total: fileLength
-        });
     }
 }
 

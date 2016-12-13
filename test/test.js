@@ -9,9 +9,9 @@ const assert = require('assert'),
 describe('Parse', function () {
     this.timeout(4000000);
     it('# parse file', function (done) {
-        let dispatcher = new Dispatcher(path.join('/Users/anthony/Documents/backup/me2day/garangnip/post'));
+        let dispatcher = new Dispatcher(path.join('/Users/anthony/Documents/backup/me2day'));
         //let dispatcher = new Dispatcher(path.join(__dirname, 'resource.html'));
-        //dispatcher.debug();
+        dispatcher.debug();
         dispatcher.execute((result)=>{
             console.log('--- SUMMARY ---');
             console.log(`Post count: ${Object.keys(result.Post).length}`);

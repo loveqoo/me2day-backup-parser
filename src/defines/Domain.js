@@ -1,3 +1,4 @@
+'use strict';
 const EOL = require('os').EOL;
 const moment = require('moment');
 
@@ -6,7 +7,7 @@ class Me2day {
     }
 
     static fromJSON(json) {
-        const obj = JSON.parse(json);
+        const obj = JSON.parse(json || '{}');
         let result = {};
         for (let key of Object.keys(obj)) {
             let origin = obj[key];
@@ -72,7 +73,7 @@ class Tag extends Me2day {
         return this.repository.direct.in('Post', this.postIdList);
     }
 
-    toString(){
+    toString() {
         return `${this.content}(${this.id}) -> post(${this.postIdList.length})`;
     }
 }
@@ -88,7 +89,7 @@ class Comment extends Me2day {
         this.rawContent;
     }
 
-    getDatetime(){
+    getDatetime() {
         return this.toDateString(this.timestamp);
     }
 
@@ -123,7 +124,7 @@ class Post extends Me2day {
         this.video;
     }
 
-    getDatetime(){
+    getDatetime() {
         return this.toDateString(this.timestamp);
     }
 
@@ -176,10 +177,88 @@ class Post extends Me2day {
     }
 }
 
+const util = (() => {
+    const
+        extractIdList = (objectList, callback = () => {
+        }) => {
+            let result = [];
+            for (let obj of objectList) {
+                callback(obj);
+                result.push(obj['id']);
+            }
+            return result;
+        },
+        postAndPeople = (post, people) => {
+            post.writerId = people.id;
+            people.postIdList.push(post.id);
+        },
+        postAndTags = (post, tags) => {
+            post.tagIdList = util.extractIdList(tags, (tag) => {
+                tag.postIdList.push(post.id);
+            });
+        },
+        postAndMetooPeopleList = (post, metooPeopleList) => {
+            post.metooPeopleIdList = extractIdList(metooPeopleList, (people) => {
+                people.metooPostIdList.push(post.id);
+            });
+        },
+        postAndCommentList = (post, commentList) => {
+            post.commentIdList = extractIdList(commentList, (comment) => {
+                comment.postId = post.id;
+            })
+        },
+
+        commentAndPeople = (comment, people) => {
+            comment.writerId = people.id;
+            people.commentIdList.push(comment.id);
+        },
+        extractPeopleIdByImageUri = (imageUri) => {
+            let regex = new RegExp("/img/images/user/(.+)/profile.png"), peopleId;
+            if (imageUri.includes('/img/images/user/')) {
+                let parsed = regex.exec(imageUri);
+                if (parsed.length > 1) {
+                    peopleId = parsed[1];
+                }
+            } else {
+                let parsed = imageUri.split('/')[3].split('_'),
+                    validLength = parsed.length - 2,
+                    temp = [];
+                parsed.forEach((str, index) => {
+                    if (index < validLength) {
+                        temp.push(str);
+                    }
+                });
+                peopleId = temp.join('_');
+            }
+            return peopleId;
+        },
+        toRawContent = (rawText) => {
+            return rawText.replace(/\<span class\=\"post_permalink\"\>.+\<\/span\>/gi, '');
+        },
+        toTimestamp = (timestampText) => {
+            return new Date('20' + timestampText.replace('.', '-').replace('.', '-').replace(' ', 'T') + ':00+09:00');
+        };
+    return {
+        graph: {
+            postAndPeople: postAndPeople,
+            postAndTags: postAndTags,
+            postAndMetooPeopleList: postAndMetooPeopleList,
+            postAndCommentList: postAndCommentList,
+            commentAndPeople: commentAndPeople
+        },
+        extractPeopleIdByImageUri: extractPeopleIdByImageUri,
+        toRawContent: toRawContent,
+        toTimestamp: toTimestamp,
+        extractIdList: extractIdList
+    };
+})();
+
+
 module.exports = {
     Me2day: Me2day,
     People: People,
     Post: Post,
     Tag: Tag,
-    Comment: Comment
+    Comment: Comment,
+    util: util
 };
