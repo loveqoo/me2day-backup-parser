@@ -51,6 +51,7 @@ class PostParser extends Parsable {
             post.timestamp = util.toTimestamp($('span.post_permalink').html());
             post.content = this.toMarkdown(util.toRawContent($('p.post_body').html()));
             post.rawContent = $('<p>' + util.toRawContent($('p.post_body').html()) + '</p>').text();
+            post.rawTag = $('p.post_tag').text();
             post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
             $('a.per_img.photo').each((idx, anchor) => {
                 let $anchor = $(anchor), $image = $anchor.find('img');

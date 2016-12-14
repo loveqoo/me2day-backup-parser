@@ -99,6 +99,10 @@ class Repository extends AsyncFsRunnable {
                     },
                     list(...ids){
                         return originList('Tag', ...ids);
+                    },
+                    findByPostId(id){
+                        let post = originData['Post'][id];
+                        return post.getTagList();
                     }
                 },
                 Comment: {

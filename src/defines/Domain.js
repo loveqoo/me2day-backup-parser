@@ -117,6 +117,7 @@ class Post extends Me2day {
         this.title;
         this.content;
         this.rawContent;
+        this.rawTag;
         this.tagIdList = [];
         this.commentIdList = [];
         this.imageList = [];
