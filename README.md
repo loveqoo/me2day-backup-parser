@@ -125,6 +125,7 @@ node
 - content
 - rawContent
 - tagIdList
+- rawTag
 - commentIdList
 - imageList
     - thumbnail
