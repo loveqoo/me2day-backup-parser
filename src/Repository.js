@@ -33,11 +33,22 @@ class Repository extends AsyncFsRunnable {
         }
     }
 
+    getMeta(){
+        const result = {};
+        const envDao = this.getDao('Env');
+        const people = envDao.anyone('People');
+        result.root = path.join(people.profileImagePath, '../../../../..');
+        return result;
+    }
+
     getDao(key) {
         let originData = this.data,
+            getIdList = (key) => {
+                return Object.keys(this.data[key]);
+            },
             originFilter = (key, f) => {
                 let result = [];
-                for (let id of Object.keys(this.data[key])) {
+                for (let id of getIdList(key)) {
                     f && f(this.data[key][id]) && result.push(this.data[key][id]);
                 }
                 return result;
@@ -49,8 +60,22 @@ class Repository extends AsyncFsRunnable {
                 }
                 return result;
             },
+            originEach = (key, f) => {
+                for (let id of getIdList(key)) {
+                    f && f(this.data[key][id]);
+                }
+            },
             dao = {
+                Env: {
+                    anyone(key){
+                        let idList = getIdList(key);
+                        return originData[key][idList[0]];
+                    }
+                },
                 People: {
+                    each(f) {
+                        originEach('People', f);
+                    },
                     findById(id){
                         return originData['People'][id];
                     },
@@ -62,6 +87,9 @@ class Repository extends AsyncFsRunnable {
                     }
                 },
                 Post: {
+                    each(f) {
+                       originEach('Post', f);
+                    },
                     findById(id){
                         return originData['Post'][id];
                     },
@@ -86,6 +114,9 @@ class Repository extends AsyncFsRunnable {
                     }
                 },
                 Tag: {
+                    each(f) {
+                        originEach('Tag', f);
+                    },
                     findById(id){
                         return originData['Tag'][id];
                     },
@@ -106,6 +137,9 @@ class Repository extends AsyncFsRunnable {
                     }
                 },
                 Comment: {
+                    each(f) {
+                        originEach('Comment', f);
+                    },
                     findById(id){
                         return originData['Comment'][id];
                     },

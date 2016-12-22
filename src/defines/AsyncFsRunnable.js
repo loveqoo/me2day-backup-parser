@@ -134,6 +134,10 @@ class AsyncFsRunnable {
         });
     }
 
+    copyFile(fromPath, toPath) {
+        fs.createReadStream(fromPath).pipe(fs.createWriteStream(toPath));
+    }
+
     removeFile(filePath) {
         return new Promise((fulfill, reject) => {
             fs.unlink(filePath, (e) => {
