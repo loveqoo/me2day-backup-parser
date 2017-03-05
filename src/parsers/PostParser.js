@@ -53,6 +53,8 @@ class PostParser extends Parsable {
             post.rawContent = $('<p>' + util.toRawContent($('p.post_body').html()) + '</p>').text();
             post.rawTag = $('p.post_tag').text();
             post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
+            post.title = post.title.trim();
+
             $('a.per_img.photo').each((idx, anchor) => {
                 let $anchor = $(anchor), $image = $anchor.find('img');
                 post.imageList.push({

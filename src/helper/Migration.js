@@ -1,5 +1,4 @@
 const path = require('path');
-const mustache = require('mustache');
 const Handlebars = require('handlebars');
 const AsyncFsRunnable = require('../defines/AsyncFsRunnable');
 const ResourceFactory = require('../ResourceFactory');
@@ -28,11 +27,15 @@ class Migration extends AsyncFsRunnable {
         });
     }
 
-    transform(templatePath, callback) {
+    transform(sourcePath, callback) {
+        let _sourcePath = path.isAbsolute(sourcePath) ? sourcePath : path.join(__dirname, '../..', sourcePath);
+
         return this.run(function *() {
-            let source = yield this.readFile(templatePath);
+            let source = yield this.readFile(_sourcePath);
             !(source) && this.throwError();
             let template = Handlebars.compile(source);
+
+            yield this.initRepository();
 
             let postDao = this.repository.getDao('Post');
 

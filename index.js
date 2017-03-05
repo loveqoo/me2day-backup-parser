@@ -11,17 +11,24 @@ module.exports = {
     load(callback){
         const factory = new ResourceFactory();
         let repository = factory.repository;
-        co(function*(){
+        co(function*() {
             yield repository.load('Post', 'People', 'Tag', 'Comment');
-        }).catch((e)=>{
+        }).catch((e) => {
             console.log(e);
-        }).then(()=>{
+        }).then(() => {
             callback();
             console.log(repository.toString());
         });
         return repository;
     },
-    migration(templatePath, callback){
-        new Migration().transform(templatePath, callback);
+    migration(sourcePath, callback){
+        const migration = new Migration();
+        co(function*() {
+            yield migration.transform(sourcePath, callback);
+        }).catch((e) => {
+            console.log(e);
+        }).then(() => {
+            console.log('complete');
+        });
     }
 };
