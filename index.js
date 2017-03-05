@@ -1,6 +1,7 @@
 'use strict';
 const Dispatcher = require('./src/Dispatcher');
 const ResourceFactory = require('./src/ResourceFactory');
+const Migration = require('./src/helper/Migration');
 const co = require('co');
 
 module.exports = {
@@ -19,5 +20,8 @@ module.exports = {
             console.log(repository.toString());
         });
         return repository;
+    },
+    migration(templatePath, callback){
+        new Migration().transform(templatePath, callback);
     }
 };

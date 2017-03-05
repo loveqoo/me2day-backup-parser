@@ -1,0 +1,8 @@
+---
+{{#with post}}
+title: {{{title}}}
+date: {{timestamp}}
+tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}}, {{{content}}}{{/if}}{{/each}}
+{{/with}}
+---
+{{{post.content}}}

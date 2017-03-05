@@ -14,6 +14,14 @@ describe('Migration Test', function () {
         });
     });
 
+    it('# parse', function (done) {
+        migration.transform('./test/post.hbs', (post, out)=>{
+            console.log(out);
+        }).then(()=>{
+            done();
+        });
+    });
+
     // it('# copyFiles', function (done) {
     //     const from = '/Users/anthony/Documents/backup/me2day/images';
     //     const to = '/Users/anthony/Documents/backup/me2day/images_copied';
