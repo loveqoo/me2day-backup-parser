@@ -3,6 +3,46 @@
 title: {{{title}}}
 date: {{timestamp}}
 tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}}, {{{content}}}{{/if}}{{/each}}
+category: me2day
 {{/with}}
 ---
-{{{post.content}}}
+# {{{post.content}}}
+
+---
+{{#if post.location}}
+### 위치
+[![{{post.location.name}}]({{post.location.image}})]({{post.location.link}} "{{post.location.name}}")
+> {{post.location.name}}
+
+---
+{{/if}}
+{{#if post.imageList}}
+### 이미지
+{{#each post.imageList}}![이미지{{@index}}]({{original}}){{/each}}
+
+---
+{{/if}}
+{{#if post.video}}
+### 비디오
+{{post.video.src}}
+> ![비디오{{@index}}]({{post.video.thumbnail}})
+
+---
+{{/if}}
+
+### 미투한 사람
+{{#with post}}
+{{#each getMetooPeopleList}}{{#if @first}}![{{nickname}}]({{profileImagePath}} "{{nickname}}"){{else}} ![{{nickname}}]({{profileImagePath}} "{{nickname}}"){{/if}}{{else}}없음{{/each}}
+{{/with}}
+
+---
+### 댓글
+{{#with post}}
+{{#each getCommentList}}
+{{#getWriter}}![{{nickname}}]({{profileImagePath}} "{{nickname}}") {{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
+> {{{content}}}
+
+{{else}}
+없음
+{{/each}}
+{{/with}}

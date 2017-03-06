@@ -4,6 +4,7 @@ const assert = require('assert');
 const Migration = require('../src/helper/Migration');
 
 describe('Migration Test', function () {
+    this.timeout(10000);
     const migration = new Migration();
     migration.debug();
     it('# getMeta', function (done) {
