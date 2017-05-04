@@ -22,12 +22,4 @@ describe('Migration Test', function () {
             done();
         });
     });
-
-    // it('# copyFiles', function (done) {
-    //     const from = '/Users/anthony/Documents/backup/me2day/images';
-    //     const to = '/Users/anthony/Documents/backup/me2day/images_copied';
-    //     migration.copyFiles(from, to, ()=>{
-    //         done();
-    //     });
-    // });
 });

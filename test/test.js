@@ -7,10 +7,9 @@ const assert = require('assert'),
     Dispatcher = require('../src/Dispatcher');
 
 describe('Parse', function () {
-    this.timeout(4000000);
+    this.timeout(2000);
     it('# parse file', function (done) {
-        let dispatcher = new Dispatcher(path.join('/Users/anthony/Documents/backup/me2day'));
-        //let dispatcher = new Dispatcher(path.join(__dirname, 'resource.html'));
+        let dispatcher = new Dispatcher(path.join(__dirname, 'resource.html'));
         dispatcher.debug();
         dispatcher.execute((result)=>{
             console.log('--- SUMMARY ---');

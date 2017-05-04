@@ -1,6 +1,6 @@
 {
   "name": "me2day-backup-parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Parser for me2day backup files",
   "main": "index.js",
   "scripts": {
