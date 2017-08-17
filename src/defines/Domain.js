@@ -38,10 +38,21 @@ class People extends Me2day {
         super();
         this.id = id;
         this.nickname;
+        this.nicknameHistories = [];
         this.profileImagePath;
         this.postIdList = [];
         this.commentIdList = [];
         this.metooPostIdList = [];
+    }
+
+    setNickname(nickname) {
+        this.nickname = nickname;
+        let contains = false;
+        this.nicknameHistories.some((str) => {
+            contains = (str === nickname);
+            return contains;
+        });
+        !contains && this.nicknameHistories.push(nickname);
     }
 
     getPostList() {
@@ -238,6 +249,29 @@ const util = (() => {
         },
         toTimestamp = (timestampText) => {
             return new Date('20' + timestampText.replace('.', '-').replace('.', '-').replace(' ', 'T') + ':00+09:00');
+        },
+        replaceCustomAnchor = (content, findByNickname) => {
+          let matchedAnchorTextList = content.match(/<a.*?>([\s\S]*?)<\/a>/g);
+          if (!matchedAnchorTextList || matchedAnchorTextList.length <= 0) {
+            return content;
+          }
+          let replaceMap = new Map();
+          matchedAnchorTextList.forEach((matchedAnchorText)=>{
+            let matchedNickname = matchedAnchorText.match(/([\w|ㄱ-ㅎ|ㅏ-ㅣ|가-힣])+(?=<\/a>)/g);
+            if (!matchedNickname || matchedNickname.length <= 0) {
+              return;
+            }
+            let peopleList = findByNickname(matchedNickname[0]);
+            if (!peopleList || peopleList.length === 0) {
+              return;
+            }
+            replaceMap.set(matchedAnchorText, '<a class="me2day-nickname" data-me2day-id="' + peopleList[0].id +'">' + matchedNickname[0] +'</a>');
+          });
+          var result = content;
+          for (var [key, value] of replaceMap) {
+            result = result.replace(new RegExp(key, "g"), value);
+          }
+          return result;
         };
     return {
         graph: {
@@ -250,7 +284,8 @@ const util = (() => {
         extractPeopleIdByImageUri: extractPeopleIdByImageUri,
         toRawContent: toRawContent,
         toTimestamp: toTimestamp,
-        extractIdList: extractIdList
+        extractIdList: extractIdList,
+        replaceCustomAnchor: replaceCustomAnchor
     };
 })();
 

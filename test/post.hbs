@@ -2,7 +2,7 @@
 {{#with post}}
 title: {{{title}}}
 date: {{timestamp}}
-tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}}, {{{content}}}{{/if}}{{/each}}
+tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}},{{{content}}}{{/if}}{{/each}}
 category: me2day
 {{/with}}
 ---
@@ -11,14 +11,14 @@ category: me2day
 ---
 {{#if post.location}}
 ### 위치
-[![{{post.location.name}}]({{post.location.image}})]({{post.location.link}} "{{post.location.name}}")
+[![{{post.location.name}}]({{toURI post.location.image}})]({{post.location.link}} "{{post.location.name}}")
 > {{post.location.name}}
 
 ---
 {{/if}}
 {{#if post.imageList}}
 ### 이미지
-{{#each post.imageList}}![이미지{{@index}}]({{original}}){{/each}}
+{{#each post.imageList}}![이미지{{@index}}]({{toURI original}}){{/each}}
 
 ---
 {{/if}}
@@ -32,14 +32,14 @@ category: me2day
 
 ### 미투한 사람
 {{#with post}}
-{{#each getMetooPeopleList}}{{#if @first}}![{{nickname}}]({{profileImagePath}} "{{nickname}}"){{else}} ![{{nickname}}]({{profileImagePath}} "{{nickname}}"){{/if}}{{else}}없음{{/each}}
+{{#each getMetooPeopleList}}{{#if @first}}![{{nickname}}]({{toURI profileImagePath}} "{{nickname}}"){{else}} ![{{nickname}}]({{toURI profileImagePath}} "{{nickname}}"){{/if}}{{else}}없음{{/each}}
 {{/with}}
 
 ---
 ### 댓글
 {{#with post}}
 {{#each getCommentList}}
-{{#getWriter}}![{{nickname}}]({{profileImagePath}} "{{nickname}}") {{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
+{{#getWriter}}![{{nickname}}]({{toURI profileImagePath}} "{{nickname}}") {{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
 > {{{content}}}
 
 {{else}}

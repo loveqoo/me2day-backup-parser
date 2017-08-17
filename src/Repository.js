@@ -84,6 +84,16 @@ class Repository extends AsyncFsRunnable {
                     },
                     list(...ids){
                         return originList('People', ...ids);
+                    },
+                    findByNickname(nickname) {
+                        return originFilter('People', (people) => {
+                            var search = false;
+                            people.nicknameHistories.some((nicknameHistory)=>{
+                                search = (nicknameHistory === nickname);
+                                return search;
+                            });
+                            return search;
+                        })
                     }
                 },
                 Post: {

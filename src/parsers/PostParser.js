@@ -9,7 +9,7 @@ class PostParser extends Parsable {
     }
 
     isMine(resourcePath) {
-        return /.\/post$/.test(resourcePath) || path.basename(resourcePath) === 'resource.html';
+        return /.\/post$/.test(resourcePath) || path.basename(resourcePath) === 'test';
     }
 
     parse(resourcePath, $) {
@@ -35,10 +35,13 @@ class PostParser extends Parsable {
             yield this.updateRepository({People: metooPeopleList});
 
             let [commentList, writerList] = yield this.getCommentList($, resourcePath);
+            commentList.forEach(comment => {
+              comment.content = util.replaceCustomAnchor(comment.content, this.repository.getDao('People').findByNickname);
+            });
+
             util.graph.postAndCommentList(post, commentList);
             yield this.updateRepository({Comment: commentList});
             yield this.updateRepository({People: writerList});
-
             yield this.updateRepository({Post: post});
             return post.title;
         });
@@ -79,7 +82,7 @@ class PostParser extends Parsable {
         });
     };
 
-    getPeople($image, resourcePath) {
+    getPeople($image, resourcePath, additionalNickname) {
         return this.run(function *() {
             let imagePath = $image.attr('src');
             let peopleId = util.extractPeopleIdByImageUri(imagePath);
@@ -88,7 +91,9 @@ class PostParser extends Parsable {
                 return people;
             }
             people = this.factory.newPeople(peopleId);
-            people.nickname = $image.attr('alt');
+            //people.nickname = $image.attr('alt');
+            people.setNickname($image.attr('alt'));
+            additionalNickname && people.setNickname(additionalNickname);
             people.profileImagePath = path.join(resourcePath, '..', imagePath);
             yield this.repository.set('People', people.id, people);
             return people;
@@ -127,7 +132,7 @@ class PostParser extends Parsable {
 
     getTags($) {
         return this.run(function *() {
-            let tagPromiseList = [], tagTextList = $('p.post_tag').text().replace(/[;|\/|\_|\-|\.]/g, '').split(' ');
+            let tagPromiseList = [], tagTextList = $('p.post_tag').text().replace(/[;|,|\/|\_|\-|\.]/g, '').split(' ');
             for (let tagText of tagTextList) {
                 tagPromiseList.push(this.getTag(tagText));
             }
@@ -142,12 +147,14 @@ class PostParser extends Parsable {
         return this.run(function *() {
             let $content = $comment.find('p.para');
             let comment = yield this.factory.newComment();
+            let nickname = $comment.find('span.comment_author a').text();
+            let writer = yield this.getPeople($comment.find('a.comment_profile.profile_popup.no_link img'), resourcePath, nickname);
+            util.graph.commentAndPeople(comment, writer);
+            yield this.repository.set('People', writer.id, writer);
+
             comment.content = this.toMarkdown($content.html());
             comment.rawContent = $('<p>' + $content.html() + '</p>').text();
             comment.timestamp = util.toTimestamp($comment.find('span.comment_time').text());
-            let writer = yield this.getPeople($comment.find('a.comment_profile.profile_popup.no_link img'), resourcePath);
-            util.graph.commentAndPeople(comment, writer);
-            yield this.repository.set('People', writer.id, writer);
             return [comment, writer];
         });
     };

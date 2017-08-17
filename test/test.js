@@ -25,3 +25,26 @@ describe('Parse', function () {
         });
     });
 });
+
+describe('Extract Anchor', function () {
+    it('extract', function () {
+        let content = '<a class="profile_popup no_link">dasti</a> 얼마나 많이 찔라고 거기까지 들릴까낭..ㅋ<a class="profile_popup no_link">dasti</a> 얼마나 많이 찔라고 거기까지 들릴까낭..ㅋ';
+        let matchedAnchorTextList = content.match(/<a.*?>([\s\S]*?)<\/a>/g);
+        if (!matchedAnchorTextList || matchedAnchorTextList.length <= 0) {
+            return;
+        }
+        let replaceMap = new Map();
+        matchedAnchorTextList.forEach((matchedAnchorText)=>{
+            let matchedNickname = matchedAnchorText.match(/([\w])+(?=<\/a>)/g);
+            if (!matchedNickname || matchedNickname.length <= 0) {
+                return;
+            }
+            replaceMap.set(matchedAnchorText, '<a data-id="hoho">' + matchedNickname[0] +'</a>');
+        });
+        var result = content;
+        for (var [key, value] of replaceMap) {
+          result = result.replace(new RegExp(key, "g"), value);
+        }
+        console.log(result);
+    });
+});

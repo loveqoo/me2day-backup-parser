@@ -41,6 +41,10 @@ class Migration extends AsyncFsRunnable {
 
             let meta = yield this.getMeta();
 
+            Handlebars.registerHelper('toURI', (url) => {
+              return url.replace(meta.root, '');
+            });
+
             postDao.each((post) => {
                 const obj = {};
                 obj.post = post;
