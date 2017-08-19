@@ -9,6 +9,9 @@ class Dispatcher extends AsyncFsRunnable {
         super();
         this.resourcePath = resourcePath;
         this.factory = new ResourceFactory();
+        this.pwd = process.env.PWD;
+        this.defaultFolderName = '.repo';
+        this.directoryPath = path.join(this.pwd, this.defaultFolderName);
     }
 
     debug() {
@@ -36,6 +39,7 @@ class Dispatcher extends AsyncFsRunnable {
             console.log(`  [INFO] ${report.total} files Found.`);
 
             let passed = 0, parsed = 0;
+            let usedFiles = [];
 
             for (let directoryPath of Object.keys(report.dir)) {
                 let targetParser;
@@ -56,11 +60,15 @@ class Dispatcher extends AsyncFsRunnable {
                 }
 
                 let files = yield this.getFileList(directoryPath, file => path.extname(file) === '.html');
+                let that = this;
                 let fileIterator = files[Symbol.iterator]();
                 let parseEachFile = () => {
                     return this.run(function *() {
                         let item = fileIterator.next();
                         if (item.done) {
+                            //yield that.writeFileWithCreate(path.join(that.directoryPath, 'usedFiles.txt'), usedFiles, (data) => { return data.join('\n') });
+                            //let fileSize = yield that.getFileSizeSum(usedFiles);
+                            //console.log(`  [INFO] Total content file size : ${fileSize}`);
                             return;
                         }
                         let resourcePath = path.join(directoryPath, item.value);
@@ -73,6 +81,7 @@ class Dispatcher extends AsyncFsRunnable {
                                     'file': baseName,
                                     'content': content
                                 });
+                              //usedFiles = usedFiles.concat(targetParser.usedFiles);
                             });
                         }).then(() => {
                             return parseEachFile();
@@ -81,7 +90,10 @@ class Dispatcher extends AsyncFsRunnable {
                 };
                 yield Promise.resolve(parseEachFile());
             }
-            yield [sequencer.save(), repository.save('Post', 'People', 'Tag', 'Comment')];
+            yield [
+              sequencer.save(),
+              repository.save('Post', 'People', 'Tag', 'Comment')
+            ];
 
             console.log(`  [INFO] ${parsed} of ${report.total} files are parsed.`);
             console.log(`  [INFO] ${passed} of ${report.total} files are passed.`);

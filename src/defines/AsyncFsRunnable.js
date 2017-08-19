@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('graceful-fs');
+const path = require('path');
 const mkdirp = require('mkdirp');
 const co = require('co');
 
@@ -118,6 +119,29 @@ class AsyncFsRunnable {
                 }
             });
         });
+    }
+
+    writeFileWithCreate(filePath, dataRef, callback) {
+      return this.run(function *() {
+        !(dataRef) && this.throwError(`data is empty.`);
+        let parentDir = path.join(filePath, '..');
+        let exists = yield this.isExist(parentDir);
+        if (!exists) {
+          yield this.createDirectory(parentDir);
+        }
+        yield this.writeFile(filePath, callback ? callback(dataRef) : dataRef);
+      });
+    }
+
+    getFileSizeSum(filePathList, dir) {
+      return this.run(function *(){
+          let result = 0;
+          for (let filePath of filePathList) {
+              let stats = yield this.getStats(dir ? path.join(dir,filePath) : filePath);
+              result += stats.size;
+          }
+          return result;
+      });
     }
 
     createDirectory(directoryPath) {

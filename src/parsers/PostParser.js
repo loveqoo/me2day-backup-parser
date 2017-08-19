@@ -6,6 +6,11 @@ class PostParser extends Parsable {
 
     constructor(parameter) {
         super(parameter);
+        this.usedFiles = [];
+    }
+
+    getUsedFiles() {
+        return this.usedFiles;
     }
 
     isMine(resourcePath) {
@@ -51,19 +56,31 @@ class PostParser extends Parsable {
         return this.run(function *() {
             let post = yield this.factory.newPost();
             post.resourcePath = resourcePath;
+            post.fileName = path.basename(resourcePath, '.html');
             post.timestamp = util.toTimestamp($('span.post_permalink').html());
+            post.dateInfo = post.getDateInfo();
             post.content = this.toMarkdown(util.toRawContent($('p.post_body').html()));
             post.rawContent = $('<p>' + util.toRawContent($('p.post_body').html()) + '</p>').text();
             post.rawTag = $('p.post_tag').text();
-            post.title = post.rawContent.length > 30 ? post.rawContent.substring(0, 30) + '...' : post.rawContent;
+            post.title = util.removeSpecialText(util.removeUserLink(post.rawContent));
+            post.title = post.title.length > 30 ? post.title.substring(0, 30) + '...' : post.title;
             post.title = post.title.trim();
+            if (!post.title) {
+                post.title = 'NoTitle';
+            }
+            post.permalink = [post.dateInfo.year, post.dateInfo.month, post.dateInfo.day, post.fileName].join('/');
+            //let that = this;
 
             $('a.per_img.photo').each((idx, anchor) => {
-                let $anchor = $(anchor), $image = $anchor.find('img');
+                let $anchor = $(anchor), $image = $anchor.find('img'),
+                thumbnail = path.join(resourcePath, '..', $image.attr('src')),
+                original = path.join(resourcePath, '..', $anchor.attr('href'));
                 post.imageList.push({
-                    thumbnail: path.join(resourcePath, '..', $image.attr('src')),
-                    original: path.join(resourcePath, '..', $anchor.attr('href'))
+                    thumbnail: thumbnail,
+                    original: original
                 });
+              //that.usedFiles.push(thumbnail);
+              //that.usedFiles.push(original);
             });
             let $map = $('div.map_container');
             if ($map.length === 1) {
@@ -71,12 +88,15 @@ class PostParser extends Parsable {
                 post.location.name = $map.find('span.map_location_alt').text();
                 post.location.link = $map.find('a').attr('href');
                 post.location.image = path.join(resourcePath, '..', $map.find('img').attr('src'));
+                //that.usedFiles.push(post.location.image);
             }
             let $embed = $('div.embed_me2photo');
             if ($embed.length === 1) {
                 post.video = {};
                 post.video.src = path.join(resourcePath, '..', '..', '..', $embed.find('a').attr('href'));
                 post.video.thumbnail = path.join(resourcePath, '..', '..', '..', $embed.find('img').attr('src'));
+                //that.usedFiles.push(post.video.src);
+                //that.usedFiles.push(post.video.thumbnail);
             }
             return post;
         });
@@ -91,10 +111,10 @@ class PostParser extends Parsable {
                 return people;
             }
             people = this.factory.newPeople(peopleId);
-            //people.nickname = $image.attr('alt');
             people.setNickname($image.attr('alt'));
             additionalNickname && people.setNickname(additionalNickname);
             people.profileImagePath = path.join(resourcePath, '..', imagePath);
+            //this.usedFiles.push(people.profileImagePath);
             yield this.repository.set('People', people.id, people);
             return people;
         });
@@ -132,7 +152,7 @@ class PostParser extends Parsable {
 
     getTags($) {
         return this.run(function *() {
-            let tagPromiseList = [], tagTextList = $('p.post_tag').text().replace(/[;|,|\/|\_|\-|\.]/g, '').split(' ');
+            let tagPromiseList = [], tagTextList = util.removeSpecialText($('p.post_tag').text()).split(' ');
             for (let tagText of tagTextList) {
                 tagPromiseList.push(this.getTag(tagText));
             }

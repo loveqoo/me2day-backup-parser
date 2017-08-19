@@ -4,7 +4,7 @@ const assert = require('assert');
 const Migration = require('../src/helper/Migration');
 
 describe('Migration Test', function () {
-    this.timeout(10000);
+    this.timeout(100000);
     const migration = new Migration();
     migration.debug();
     it('# getMeta', function (done) {
@@ -16,8 +16,24 @@ describe('Migration Test', function () {
     });
 
     it('# parse', function (done) {
-        migration.transform('./test/post.hbs', (post, out)=>{
-            console.log(out);
+        let migrationConfig = {
+          sourcePath: './test/post-only-text.hbs',
+          rootPath: '/Users/anthony/Documents/migration/',
+          getFolderPath : (post) => {
+            let dateInfo = post.getDateInfo();
+            return [dateInfo.year, dateInfo.month].join('');
+          },
+          getFileName: (post) => {
+            let dateInfo = post.getDateInfo();
+            let fileBaseName = post.title.trim().replace('...', '')
+              .replace(/[.|,]/g, '')
+              .replace(/[ ]+/g, '-') + '.md';
+            return [dateInfo.year, dateInfo.month, dateInfo.day, fileBaseName].join('-');
+          }
+        };
+        migration.transform(migrationConfig, (post, out)=>{
+            //console.log(out);
+            //throw new Error('');
         }).then(()=>{
             done();
         });

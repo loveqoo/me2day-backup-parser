@@ -1,0 +1,45 @@
+---
+{{#with post}}
+title: {{{title}}}
+date: {{timestamp}}
+tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}},{{{content}}}{{/if}}{{/each}}
+category: me2day
+permalink: /me2day/{{permalink}}
+{{/with}}
+---
+# {{{post.content}}}
+
+---
+{{#if post.location}}
+### 위치
+> {{post.location.name}}
+
+---
+{{/if}}
+{{#if post.imageList}}
+### 이미지
+{{#each post.imageList}}{{original}}{{/each}}
+
+---
+{{/if}}
+{{#if post.video}}
+### 비디오
+{{post.video.src}}
+> {{post.video.thumbnail}}
+
+---
+{{/if}}
+
+### 미투한 사람
+{{#with post}}{{#each getMetooPeopleList}}{{nickname}}{{else}}없음{{/each}}{{/with}}
+
+---
+### 댓글
+{{#with post}}
+{{#each getCommentList}}{{#getWriter}}{{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
+> {{{content}}}
+
+{{else}}
+없음
+{{/each}}
+{{/with}}

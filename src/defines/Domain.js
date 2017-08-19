@@ -20,8 +20,26 @@ class Me2day {
         return result;
     }
 
-    toDateString(obj) {
+    toDateTimeString(obj) {
         return obj ? moment(obj).format('YYYY-MM-DD HH:mm:ss') : '';
+    }
+
+    toDateString(obj) {
+       return obj ? moment(obj).format('YYYY-MM-DD') : '';
+    }
+
+    parseDate(obj) {
+       if (!obj) {
+           return '';
+       }
+       let momentObj = moment(obj);
+       return {
+           year: momentObj.format('YYYY'),
+           month: momentObj.format('MM'),
+           day: momentObj.format('DD'),
+           hour: momentObj.format('HH'),
+           minute: momentObj.format('mm')
+       };
     }
 
     toString() {
@@ -101,7 +119,7 @@ class Comment extends Me2day {
     }
 
     getDatetime() {
-        return this.toDateString(this.timestamp);
+        return this.toDateTimeString(this.timestamp);
     }
 
     getWriter() {
@@ -113,7 +131,7 @@ class Comment extends Me2day {
     }
 
     toString() {
-        return `${this.toDateString(this.timestamp)} ${this.getWriter().nickname} ${this.rawContent}`;
+        return `${this.toDateTimeString(this.timestamp)} ${this.getWriter().nickname} ${this.rawContent}`;
     }
 }
 
@@ -123,8 +141,10 @@ class Post extends Me2day {
         this.id = id;
         this.writerId;
         this.resourcePath;
+        this.fileName;
         this.metooPeopleIdList = [];
         this.timestamp;
+        this.dateInfo;
         this.title;
         this.content;
         this.rawContent;
@@ -134,10 +154,19 @@ class Post extends Me2day {
         this.imageList = [];
         this.location;
         this.video;
+        this.permalink;
     }
 
     getDatetime() {
-        return this.toDateString(this.timestamp);
+        return this.toDateTimeString(this.timestamp);
+    }
+
+    getDate() {
+      return this.toDateString(this.timestamp);
+    }
+
+    getDateInfo() {
+      return this.parseDate(this.timestamp);
     }
 
     getWriter() {
@@ -179,7 +208,7 @@ class Post extends Me2day {
             };
         result.push(`Post ID: ${this.id}`);
         result.push(`Content: ${this.rawContent}`);
-        result.push(`Time: ${this.toDateString(this.timestamp)}`);
+        result.push(`Time: ${this.toDateTimeString(this.timestamp)}`);
         result.push(`Tags: ${getTags()}`);
         result.push(`Metoo: ${getMetoo()}`);
         result.push(`Comment: `);
@@ -250,6 +279,27 @@ const util = (() => {
         toTimestamp = (timestampText) => {
             return new Date('20' + timestampText.replace('.', '-').replace('.', '-').replace(' ', 'T') + ':00+09:00');
         },
+        removeUserLink = (content) =>{
+          let matchedUserLinkList = content.match(/“[\w|ㄱ-ㅎ|ㅏ-ㅣ|가-힣]+”:http:\/\/me2day\.net\/[\w|\-|_]+(?=\W)/g);
+          if (!matchedUserLinkList || matchedUserLinkList.length <= 0) {
+            return content;
+          }
+          let replaceMap = new Map();
+          matchedUserLinkList.forEach((matchedUserLinkText)=> {
+            var matched = /“([\w|ㄱ-ㅎ|ㅏ-ㅣ|가-힣]+)”/g.exec(matchedUserLinkText);
+            if (matched && matched.length === 2) {
+              replaceMap.set(matchedUserLinkText, matched[1]);
+            }
+          });
+          var result = content;
+          for (var [key, value] of replaceMap) {
+            result = result.replace(new RegExp(key, "g"), value);
+          }
+          return result;
+        },
+        removeSpecialText = (content)=>{
+          return content.replace(/[^\w|^가-힣|^ ]/g, '').replace(/\|/g, '');
+        },
         replaceCustomAnchor = (content, findByNickname) => {
           let matchedAnchorTextList = content.match(/<a.*?>([\s\S]*?)<\/a>/g);
           if (!matchedAnchorTextList || matchedAnchorTextList.length <= 0) {
@@ -285,7 +335,9 @@ const util = (() => {
         toRawContent: toRawContent,
         toTimestamp: toTimestamp,
         extractIdList: extractIdList,
-        replaceCustomAnchor: replaceCustomAnchor
+        replaceCustomAnchor: replaceCustomAnchor,
+        removeUserLink: removeUserLink,
+        removeSpecialText: removeSpecialText
     };
 })();
 
