@@ -1,42 +1,37 @@
 ---
+layout: post
 {{#with post}}
-title: {{{title}}}
-date: {{timestamp}}
-tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}},{{{content}}}{{/if}}{{/each}}
+title: "{{{title}}}"
+date: {{dateInfo.year}}-{{dateInfo.month}}-{{dateInfo.day}} {{dateInfo.hour}}:{{dateInfo.minute}}:00 +09:00
+tags: {{#each getTagList}}
+  - {{{content}}}{{/each}}
 category: me2day
-permalink: /me2day/{{permalink}}
+permalink: {{permalink}}
 {{/with}}
 ---
-# {{{post.content}}}
+# {{{post.content}}}{{!--
 
----
-{{#if post.location}}
-### 위치
+{{#if post.location}}### 위치
 > {{post.location.name}}
 
----
 {{/if}}
-{{#if post.imageList}}
-### 이미지
+
+{{#if post.imageList}}### 이미지
 {{#each post.imageList}}{{original}}{{/each}}
 
----
 {{/if}}
-{{#if post.video}}
-### 비디오
+{{#if post.video}}### 비디오
 {{post.video.src}}
 > {{post.video.thumbnail}}
 
----
-{{/if}}
-
+{{/if}}--}}
 ### 미투한 사람
-{{#with post}}{{#each getMetooPeopleList}}{{nickname}}{{else}}없음{{/each}}{{/with}}
+{{#with post}}{{#each getMetooPeopleList}}
+- {{nickname}}({{id}}@me2day){{else}}없음{{/each}}
+{{/with}}
 
----
 ### 댓글
-{{#with post}}
-{{#each getCommentList}}{{#getWriter}}{{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
+{{#with post}}{{#each getCommentList}}{{#getWriter}}{{nickname}}({{id}}@me2day){{/getWriter}} {{getDatetime}}
 > {{{content}}}
 
 {{else}}

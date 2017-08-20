@@ -1,10 +1,12 @@
 ---
+layout: post
 {{#with post}}
-title: {{{title}}}
+title: "{{{title}}}"
 date: {{timestamp}}
-tags: {{#each getTagList}}{{#if @first}}{{{content}}}{{else}},{{{content}}}{{/if}}{{/each}}
+tags: {{#each getTagList}}
+  - {{{content}}}{{/each}}
 category: me2day
-permalink: /me2day/{{permalink}}
+permalink: {{permalink}}
 {{/with}}
 ---
 # {{{post.content}}}

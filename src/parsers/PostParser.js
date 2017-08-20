@@ -56,7 +56,7 @@ class PostParser extends Parsable {
         return this.run(function *() {
             let post = yield this.factory.newPost();
             post.resourcePath = resourcePath;
-            post.fileName = path.basename(resourcePath, '.html');
+            post.fileName = path.basename(resourcePath);
             post.timestamp = util.toTimestamp($('span.post_permalink').html());
             post.dateInfo = post.getDateInfo();
             post.content = this.toMarkdown(util.toRawContent($('p.post_body').html()));
@@ -68,7 +68,7 @@ class PostParser extends Parsable {
             if (!post.title) {
                 post.title = 'NoTitle';
             }
-            post.permalink = [post.dateInfo.year, post.dateInfo.month, post.dateInfo.day, post.fileName].join('/');
+            post.permalink = ['me2day', post.dateInfo.year, post.dateInfo.month, post.dateInfo.day, post.fileName].join('/');
             //let that = this;
 
             $('a.per_img.photo').each((idx, anchor) => {
